@@ -1,14 +1,14 @@
 # 项目实施计划：安卓优先，随后接入 ESP8266
 
-日期：2026-10-09。状态：待实施。设计依据：[系统设计](../design/system-design.md)、[协议 v1](../protocol/wifi-control-v1.md)、[实验要求](../requirements/lab12-android-wifi.md)。本轮只整理文档和代理目录，不修改业务代码。
+日期：2026-10-09。状态：安卓首版已实施，真机和实物验收待完成。设计依据：[系统设计](../design/system-design.md)、[网络与权限补充设计](../design/network-and-permissions.md)、[协议 v1](../protocol/wifi-control-v1.md)、[实验要求](../requirements/lab12-android-wifi.md)。以下阶段保留规划顺序，实际完成项与检查见[安卓首版验证记录](../testing/android-first-release.md)。
 
 ## 1. 当前基线与已知条件
 
-- 当前 Activity 仅显示 Hello Android，无网络、设备、外设控制或模拟模式。
+- 开发开始时 Activity 仅显示 Hello Android；现在已实现外设控制界面、HTTP、模拟模式与设备发现。
 - Kotlin/Compose/Material3，applicationId `edu.wifi.light`，minSdk 23，compileSdk/targetSdk 37。
 - Wrapper 9.6.0、AGP 9.4.1、Kotlin 2.2.10、Compose BOM 2026.02.01，daemon toolchain 25。保持现有配置，先构建核验，不凭版本号盲目升级/降级。
 - 本机已发现 Android SDK 平台目录 android-23、android-34、android-37.0；平台目录存在不等于完整构建环境可用，真机连接也未核实。
-- 公共仓库此前通过 API 上传，远端有 Seed repository + Initial commit，而本地有独立 root commit。开始提交/推送前先 fetch 和比较历史/文件；当前计划不执行合并或强制推送。
+- 前次文档推送已合并本地与远端历史，main 已跟踪 origin/main。后续 Git 同步仍需检查当前状态和新修改。
 - 手机/板型/外设尚未提供；安卓模拟开发可先做，最终真机验收必须补充这些信息。
 
 ## 2. 总体顺序与完成定义
@@ -107,12 +107,12 @@ P0 工程基线
 任务：
 
 1. 创建 `firmware/esp8266/`，固定可用 ESP8266 Core/构建工具版本，板级配置与通用 API 分离。
-2. 默认 SoftAP；SSID/密码通过本地配置或构建环境输入，提供无真实密钥的样例；串口输出服务 IP、端口和启动状态。
+2. 默认 STA 加入手机热点，兼容普通 WLAN；保留 SoftAP 模式。SSID/密码通过本地配置或构建环境输入，提供无真实密钥的样例；串口输出服务 IP、端口和启动状态，广播 `_wifi-control._tcp` 服务供安卓发现。
 3. LED BinaryOutput 驱动初始化安全关闭；GPIO 有效电平由配置映射，API true 永远表示逻辑开启。
 4. 外设注册表生成 device 描述；实现三类端点、body/类型/范围校验、状态快照、revision 和 bootId。
 5. 驱动执行结果与 API 错误对应；限制资源和请求容量，记录串口错误与堆内存数据。
 6. WiFi 和 HTTP 主循环保持可服务；可读传感器状态独立采样缓存，避免长阻塞操作。
-7. 保留 STA 配置入口，但是否实现由首版联调结果决定；不把第二拓扑阻塞首版。
+7. 验证 STA 在手机热点中的服务可达性，随后验证普通 WLAN；SoftAP 为备用拓扑。手机热点下不假定默认 IP 和组播一定可用。
 
 验收：固件构建烧录成功；启动 LED 关闭；合法命令驱动 LED，非法请求无副作用；重启 bootId 改变；描述与注册驱动一致。
 
@@ -120,7 +120,7 @@ P0 工程基线
 
 任务：
 
-1. 手机连接 ESP 热点并确认本地网络可用；App 按串口显示地址连接。
+1. 手机打开热点、ESP 加入该热点，确认本地网络可用；App 使用发现结果或串口显示地址连接。另验证普通 WLAN，条件允许时验证 ESP SoftAP。
 2. 执行读取初始状态 → 开 → 关 → 重新读取；同步拍摄 LED 变化、App 确认状态和串口记录。
 3. 重复控制、拔电重启、离开热点、重新连接、前后台切换、权限撤回等故障测试。
 4. 验证手机开启蜂窝网络时也能访问 ESP 热点；针对实际手机路由问题记录处理结果。

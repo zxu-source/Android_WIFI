@@ -1,6 +1,6 @@
 # WiFi 外设遥控系统设计
 
-状态：规划方案，未实现。日期：2026-10-09。
+状态：安卓首版已实现，实物联调未完成。日期：2026-10-09。网络默认方案已根据用户澄清调整，见[网络与权限补充设计](network-and-permissions.md)。
 
 ## 1. 目标与边界
 
@@ -16,7 +16,7 @@ Android 手机是上位机遥控器；ESP8266 是提供 WiFi 服务、解析命�
 | 自定义 TCP 文本/二进制 | 开销小、可保持长连接 | 需自行定义分帧、连接恢复与协议调试工具 | 未来低延迟需求再评估 |
 | MQTT | 适合多设备和发布订阅 | 要部署 broker、管理主题与连接 | 后续多节点扩展 |
 
-WiFi 拓扑：首版优先 ESP8266 SoftAP，手机连接板端热点；后续支持 STA（手机与开发板处于同一局域网）。两种模式使用相同 API。`192.168.4.1:80` 仅为 SoftAP 配置建议，最终以固件启动日志为准；STA 不能假定同一地址。
+WiFi 拓扑：默认手机提供热点，ESP8266 STA 加入；同时支持普通 WLAN 的 STA 模式及开发板 SoftAP。各种模式使用相同 API。`192.168.4.1:80` 仅为开发板 SoftAP 配置建议，最终以固件启动日志为准；手机热点和普通 WLAN 的 DHCP 地址不能假定为该地址。
 
 ESP8266 支持 AP/STA 模式，见[官方 ESP8266WiFi 文档](https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html)。首版不启用 AP+STA 的额外复杂性。
 
@@ -107,7 +107,7 @@ firmware/esp8266/（固件阶段才创建工程）
 
 Manifest 规划增加 `INTERNET`、`ACCESS_NETWORK_STATE`。targetSdk 已是 37：在 Android 17/API 37 真机上连接局域网前检查并申请 `ACCESS_LOCAL_NETWORK`，处理拒绝与撤回；低版本分支不调用不存在的权限 API。该规则依据[Android 局域网权限官方文档](https://developer.android.com/privacy-and-security/local-network-permission)，核对日期 2026-10-09。
 
-首版用户手动在系统设置中连接热点，App 不扫描 SSID、不修改系统 WiFi，因此不因“使用 WiFi”就额外申请定位、扫描或配网权限。
+首版用户手动在系统设置中打开手机热点或连接 WLAN，App 不扫描 SSID、不修改系统 WiFi；使用 NSD/mDNS 发现 `_wifi-control._tcp.` 服务，因此不因“使用 WiFi”就额外申请定位、扫描或配网权限。Android16 人工 opt-in 的局域网保护实验模式见补充设计，不能视为已实测支持。
 
 热点可能无互联网，手机仍可能选择蜂窝网络。真实 HTTP 实现观察 WiFi 网络，在需要时通过对应 `Network.socketFactory` 发出请求；连接池按网络生命周期隔离，网络丢失时取消请求。不能将系统互联网验证失败当成板端离线，也不要求用户必须关闭移动数据。
 

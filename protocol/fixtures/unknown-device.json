@@ -1,0 +1,1 @@
+{"protocolVersion":1,"deviceId":"esp8266-demo-01","bootId":"boot-8f21","name":"扩展测试","firmwareVersion":"0.1.0","futureField":true,"resources":[{"id":"future.device","name":"扩展外设","kind":"custom","properties":[{"id":"color","name":"颜色","type":"color","readable":true,"writable":true}]}]}

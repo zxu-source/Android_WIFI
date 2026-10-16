@@ -1,0 +1,1 @@
+{"protocolVersion":1,"deviceId":"esp8266-demo-01","bootId":"boot-8f21","revision":13,"resources":[{"id":"sensor.room","values":{"temperature":null},"quality":{"temperature":"unavailable"}}]}

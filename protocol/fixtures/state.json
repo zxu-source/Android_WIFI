@@ -1,0 +1,11 @@
+{
+  "protocolVersion": 1,
+  "deviceId": "esp8266-demo-01",
+  "bootId": "boot-8f21",
+  "revision": 12,
+  "resources": [
+    {"id":"led.main","values":{"on":false},"quality":{"on":"good"}},
+    {"id":"pwm.light","values":{"level":35},"quality":{"level":"good"}},
+    {"id":"sensor.room","values":{"temperature":24.5},"quality":{"temperature":"good"}}
+  ]
+}

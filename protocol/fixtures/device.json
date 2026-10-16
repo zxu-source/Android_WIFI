@@ -1,0 +1,12 @@
+{
+  "protocolVersion": 1,
+  "deviceId": "esp8266-demo-01",
+  "bootId": "boot-8f21",
+  "name": "实验外设控制器",
+  "firmwareVersion": "0.1.0",
+  "resources": [
+    {"id":"led.main","name":"主 LED","kind":"binary-output","properties":[{"id":"on","name":"开关","type":"boolean","readable":true,"writable":true}]},
+    {"id":"pwm.light","name":"调光灯","kind":"range-output","properties":[{"id":"level","name":"亮度","type":"integer","readable":true,"writable":true,"min":0,"max":100,"step":1,"unit":"%"}]},
+    {"id":"sensor.room","name":"温度传感器","kind":"sensor","properties":[{"id":"temperature","name":"温度","type":"number","readable":true,"writable":false,"unit":"°C"}]}
+  ]
+}

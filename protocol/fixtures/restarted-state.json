@@ -1,0 +1,1 @@
+{"protocolVersion":1,"deviceId":"esp8266-demo-01","bootId":"boot-after-restart","revision":0,"resources":[{"id":"led.main","values":{"on":false},"quality":{"on":"good"}}]}
