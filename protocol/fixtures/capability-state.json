@@ -1,0 +1,14 @@
+{
+  "protocolVersion": 1,
+  "deviceId": "esp8266-demo-01",
+  "bootId": "boot-8f21",
+  "capabilitiesRevision": 1,
+  "revision": 0,
+  "resources": [
+    {"id":"led.main","values":{"on":false},"quality":{"on":"good"}},
+    {"id":"relay.desk","values":{"on":false},"quality":{"on":"good"}},
+    {"id":"fan.desk","values":{"speed":40},"quality":{"speed":"good"}},
+    {"id":"pwm.light","values":{"level":35},"quality":{"level":"good"}},
+    {"id":"sensor.room","values":{"temperature":24.5},"quality":{"temperature":"good"}}
+  ]
+}

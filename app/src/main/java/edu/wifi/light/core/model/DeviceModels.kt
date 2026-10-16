@@ -6,9 +6,17 @@ data class DeviceDescription(
     val name: String,
     val firmwareVersion: String,
     val resources: List<ResourceDescription>,
+    val capabilitiesRevision: Long? = null,
 )
 
-data class ResourceDescription(val id: String, val name: String, val kind: String, val properties: List<PropertyDescription>)
+data class ResourceDescription(val id: String, val name: String, val kind: String, val properties: List<PropertyDescription>) {
+    val kindLabel: String get() = when (kind) {
+        "binary-output" -> "二态开关"
+        "range-output" -> "范围调节"
+        "sensor" -> "只读传感"
+        else -> "自定义外设"
+    }
+}
 
 data class PropertyDescription(
     val id: String,
@@ -34,7 +42,7 @@ sealed interface PropertyValue {
 
 data class PropertyKey(val resourceId: String, val propertyId: String)
 data class Reading(val value: PropertyValue, val quality: String)
-data class DeviceSnapshot(val deviceId: String, val bootId: String, val revision: Long, val readings: Map<PropertyKey, Reading>)
+data class DeviceSnapshot(val deviceId: String, val bootId: String, val revision: Long, val readings: Map<PropertyKey, Reading>, val capabilitiesRevision: Long? = null)
 data class WriteReceipt(val requestId: String, val deviceId: String, val bootId: String, val key: PropertyKey, val value: PropertyValue, val revision: Long)
 
 class DeviceException(val code: String, override val message: String, val outcomeUnknown: Boolean = false) : Exception(message)

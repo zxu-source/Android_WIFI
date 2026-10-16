@@ -1,0 +1,30 @@
+{
+  "protocolVersion": 1,
+  "deviceId": "esp8266-demo-01",
+  "bootId": "boot-8f21",
+  "capabilitiesRevision": 1,
+  "name": "客厅外设控制器",
+  "firmwareVersion": "0.1.0",
+  "resources": [
+    {
+      "id": "led.main", "name": "客厅顶灯", "kind": "binary-output",
+      "properties": [{"id":"on","name":"照明","type":"boolean","readable":true,"writable":true}]
+    },
+    {
+      "id": "relay.desk", "name": "书桌台灯", "kind": "binary-output",
+      "properties": [{"id":"on","name":"电源","type":"boolean","readable":true,"writable":true}]
+    },
+    {
+      "id": "fan.desk", "name": "桌面风扇", "kind": "range-output",
+      "properties": [{"id":"speed","name":"风速","type":"number","readable":true,"writable":true,"min":0,"max":100,"step":0.5,"unit":"%"}]
+    },
+    {
+      "id": "pwm.light", "name": "氛围灯", "kind": "range-output",
+      "properties": [{"id":"level","name":"亮度","type":"integer","readable":true,"writable":true,"min":0,"max":100,"step":1,"unit":"%"}]
+    },
+    {
+      "id": "sensor.room", "name": "室内温度", "kind": "sensor",
+      "properties": [{"id":"temperature","name":"温度","type":"number","readable":true,"writable":false,"unit":"°C"}]
+    }
+  ]
+}

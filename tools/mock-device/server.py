@@ -15,8 +15,8 @@ FIXTURES = Path(__file__).resolve().parents[2] / "protocol" / "fixtures"
 class Device:
     def __init__(self):
         self.lock = threading.Lock()
-        self.description = json.loads((FIXTURES / "device.json").read_text(encoding="utf-8"))
-        self.state = json.loads((FIXTURES / "state.json").read_text(encoding="utf-8"))
+        self.description = json.loads((FIXTURES / "capability-list.json").read_text(encoding="utf-8"))
+        self.state = json.loads((FIXTURES / "capability-state.json").read_text(encoding="utf-8"))
         boot = str(uuid.uuid4())
         self.description["bootId"] = self.state["bootId"] = boot
         self.state["revision"] = 0

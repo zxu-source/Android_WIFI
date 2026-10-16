@@ -32,11 +32,13 @@ fun ControlScreen(
     onRefresh: () -> Unit, onWrite: (PropertyKey, PropertyValue) -> Unit,
     onDiscover: () -> Unit, onStopDiscovery: () -> Unit, onSelect: (DiscoveredDevice) -> Unit,
     onSettings: (String) -> Unit, onFault: (MockFault) -> Unit, onReboot: () -> Unit,
+    onRefreshCapabilities: () -> Unit = onRefresh,
+    onAddMockResource: () -> Unit = {},
 ) {
     var showDiagnostics by rememberSaveable { mutableStateOf(false) }
     val busy = state.pending.isNotEmpty() || state.refreshing
     Scaffold { insets ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(insets), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(insets).testTag("control-list"), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
                 Text("WiFi 外设遥控", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text("手机发出命令 · 下位机驱动外设", style = MaterialTheme.typography.bodyMedium)
@@ -85,16 +87,22 @@ fun ControlScreen(
             state.device?.let { device ->
                 item { Section(device.name) {
                     Text("${device.deviceId} · 固件 ${device.firmwareVersion} · 协议 v1", style = MaterialTheme.typography.bodySmall)
+                    Text("功能清单：${device.resources.size} 项外设 · ${device.resources.sumOf { r -> r.properties.count { it.controllable } }} 项可控属性", modifier = Modifier.testTag("capability-summary"))
+                    Text("清单版本：${device.capabilitiesRevision?.toString() ?: "旧版设备未提供"}${state.capabilitiesUpdatedAt?.let { " · 获取于 ${time(it)}" }.orEmpty()}", style = MaterialTheme.typography.bodySmall)
+                    OutlinedButton(onClick = onRefreshCapabilities, enabled = !busy, modifier = Modifier.testTag("refresh-capabilities")) { Text("更新功能清单") }
+                    if (device.resources.isEmpty()) Text("设备清单为空，暂时没有可显示的外设。可更新功能清单重试。")
                     Text("外设回报为逻辑输出状态；没有反馈传感器时不代表触点/负载实测。", style = MaterialTheme.typography.bodySmall)
                 } }
                 items(device.resources, key = { it.id }) { resource ->
                     Section(resource.name) {
-                        Text(resource.id, style = MaterialTheme.typography.labelSmall)
+                        Text("${resource.kindLabel} · ${resource.id}", style = MaterialTheme.typography.labelSmall)
                         resource.properties.forEach { property ->
+                            key(property.id) {
                             val key = PropertyKey(resource.id, property.id)
                             PropertyControl(property, state.snapshot?.readings?.get(key), state.pending[key], state.propertyErrors[key],
                                 enabled = state.status == ConnectionStatus.CONNECTED && !busy,
                                 tag = "${resource.id}.${property.id}", onWrite = { onWrite(key, it) })
+                            }
                         }
                     }
                 }
@@ -103,6 +111,7 @@ fun ControlScreen(
                 Section("模拟故障测试") {
                     Choice("场景", state.fault.label, MockFault.entries.map { it.label }) { label -> onFault(MockFault.entries.first { it.label == label }) }
                     OutlinedButton(onClick = onReboot, enabled = !busy) { Text("模拟下位机重启") }
+                    OutlinedButton(onClick = onAddMockResource, enabled = !busy, modifier = Modifier.testTag("mock-add-resource")) { Text("模拟新增一盏灯") }
                 }
             }
             item {
@@ -149,8 +158,9 @@ private fun PropertyControl(property: PropertyDescription, reading: Reading?, pe
             property.type in setOf("integer", "number") -> {
                 val min = property.min!!; val max = property.max!!; val step = property.step!!
                 val actual = (reading?.value as? PropertyValue.NumberValue)?.value ?: min
-                var target by remember(tag, actual) { mutableDoubleStateOf(actual.coerceIn(min, max)) }
-                var numericInput by remember(tag, actual) { mutableStateOf(actual.toString()) }
+                var target by remember(tag, actual, property) { mutableDoubleStateOf(actual.coerceIn(min, max)) }
+                var numericInput by remember(tag, actual, property) { mutableStateOf(actual.toString()) }
+                Text("滑条调节 · 步长 $step ${property.unit}", style = MaterialTheme.typography.bodySmall)
                 Text("目标：${formatValue(PropertyValue.NumberValue(target))} ${property.unit}")
                 if (min.toFloat().isFinite() && max.toFloat().isFinite() && max.toFloat() > min.toFloat()) Slider(value = target.toFloat(), onValueChange = { raw -> target = (min + round((raw.toDouble() - min) / step) * step).coerceIn(min, max) },
                     onValueChangeFinished = { onWrite(PropertyValue.NumberValue(target)) }, valueRange = min.toFloat()..max.toFloat(),

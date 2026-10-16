@@ -30,6 +30,29 @@ class MainActivitySmokeTest {
         compose.onNodeWithText("真实设备").performClick()
     }
 
+    @Test fun capabilityChangeAddsANamedLightWithoutChangingTheApp() {
+        compose.onNodeWithTag("mock-mode").performClick()
+        compose.onNodeWithTag("connect").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("capability-summary").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("mock-add-resource"))
+        compose.onNodeWithTag("mock-add-resource").performClick()
+        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("capability-summary"))
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("capability-summary").fetchSemanticsNodes().any {
+                it.config.getOrElse(androidx.compose.ui.semantics.SemanticsProperties.Text) { emptyList() }.any { text -> text.text.contains("7 项外设") }
+            }
+        }
+        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("switch.bedside.power"))
+        compose.onNodeWithTag("switch.bedside.power").assertIsOff().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("确认状态：开启 ").fetchSemanticsNodes().isNotEmpty() }
+        saveScreenshot("capability-new-light.png")
+        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("refresh-capabilities"))
+        compose.onNodeWithTag("refresh-capabilities").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("connect").performScrollTo()
+        compose.onNodeWithText("真实设备").performClick()
+    }
+
     private fun saveScreenshot(name: String) {
         compose.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()

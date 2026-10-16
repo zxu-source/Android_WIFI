@@ -7,13 +7,13 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 
 @Serializable
-internal data class DeviceDto(val protocolVersion: Int, val deviceId: String, val bootId: String, val name: String, val firmwareVersion: String, val resources: List<ResourceDto>)
+internal data class DeviceDto(val protocolVersion: Int, val deviceId: String, val bootId: String, val name: String, val firmwareVersion: String, val resources: List<ResourceDto>, val capabilitiesRevision: Long? = null)
 @Serializable
 internal data class ResourceDto(val id: String, val name: String, val kind: String, val properties: List<PropertyDto>)
 @Serializable
 internal data class PropertyDto(val id: String, val name: String, val type: String, val readable: Boolean, val writable: Boolean, val min: Double? = null, val max: Double? = null, val step: Double? = null, val unit: String = "")
 @Serializable
-internal data class StateDto(val protocolVersion: Int, val deviceId: String, val bootId: String, val revision: Long, val resources: List<StateResourceDto>)
+internal data class StateDto(val protocolVersion: Int, val deviceId: String, val bootId: String, val revision: Long, val resources: List<StateResourceDto>, val capabilitiesRevision: Long? = null)
 @Serializable
 internal data class StateResourceDto(val id: String, val values: Map<String, JsonElement>, val quality: Map<String, String>)
 @Serializable
@@ -31,6 +31,9 @@ object ProtocolCodec {
     private fun metadata(deviceId: String, bootId: String, revision: Long = 0) {
         require(deviceId.isNotBlank() && bootId.isNotBlank() && revision >= 0) { "设备身份或状态版本缺失" }
     }
+    private fun displayName(value: String) {
+        require(value.isNotBlank() && value.codePointCount(0, value.length) <= 64 && value.none { it.isISOControl() })
+    }
     private inline fun <T> parse(block: () -> T): T = try { block() } catch (e: DeviceException) {
         throw e
     } catch (_: Exception) { throw DeviceException("INVALID_RESPONSE", "设备响应格式或字段不合法") }
@@ -38,12 +41,19 @@ object ProtocolCodec {
     fun description(text: String): DeviceDescription = parse {
         val dto = json.decodeFromString<DeviceDto>(text)
         version(dto.protocolVersion); metadata(dto.deviceId, dto.bootId)
+        displayName(dto.name)
+        require(dto.capabilitiesRevision == null || dto.capabilitiesRevision >= 0)
         require(dto.resources.size <= 8 && dto.resources.map { it.id }.distinct().size == dto.resources.size)
         val resources = dto.resources.map { r ->
             Validation.id(r.id)
+            displayName(r.name)
+            Validation.id(r.kind)
             require(r.properties.size in 1..4 && r.properties.map { it.id }.distinct().size == r.properties.size)
             ResourceDescription(r.id, r.name, r.kind, r.properties.map { p ->
                 Validation.id(p.id)
+                displayName(p.name)
+                Validation.id(p.type)
+                require(p.unit.codePointCount(0, p.unit.length) <= 16 && p.unit.none { it.isISOControl() })
                 require(p.readable && (p.type != "string" || !p.writable))
                 if (p.writable && p.type in setOf("integer", "number")) {
                     require(p.min?.isFinite() == true && p.max?.isFinite() == true && p.step?.isFinite() == true)
@@ -53,12 +63,13 @@ object ProtocolCodec {
                 PropertyDescription(p.id, p.name, p.type, p.readable, p.writable, p.min, p.max, p.step, p.unit)
             })
         }
-        DeviceDescription(dto.deviceId, dto.bootId, dto.name, dto.firmwareVersion, resources)
+        DeviceDescription(dto.deviceId, dto.bootId, dto.name, dto.firmwareVersion, resources, dto.capabilitiesRevision)
     }
 
     fun snapshot(text: String): DeviceSnapshot = parse {
         val dto = json.decodeFromString<StateDto>(text)
         version(dto.protocolVersion); metadata(dto.deviceId, dto.bootId, dto.revision)
+        require(dto.capabilitiesRevision == null || dto.capabilitiesRevision >= 0)
         require(dto.resources.size <= 8 && dto.resources.map { it.id }.distinct().size == dto.resources.size)
         val readings = mutableMapOf<PropertyKey, Reading>()
         dto.resources.forEach { resource ->
@@ -72,7 +83,7 @@ object ProtocolCodec {
                 readings[PropertyKey(resource.id, id)] = Reading(value, quality)
             }
         }
-        DeviceSnapshot(dto.deviceId, dto.bootId, dto.revision, readings)
+        DeviceSnapshot(dto.deviceId, dto.bootId, dto.revision, readings, dto.capabilitiesRevision)
     }
 
     fun receipt(text: String): WriteReceipt = parse {

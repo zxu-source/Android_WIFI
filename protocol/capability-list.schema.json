@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WiFi Control v1 device capability list",
+  "type": "object",
+  "required": ["protocolVersion", "deviceId", "bootId", "name", "firmwareVersion", "resources"],
+  "properties": {
+    "protocolVersion": {"const": 1},
+    "deviceId": {"type": "string", "minLength": 1},
+    "bootId": {"type": "string", "minLength": 1},
+    "name": {"$ref": "#/$defs/name"},
+    "firmwareVersion": {"type": "string"},
+    "capabilitiesRevision": {"type": ["integer", "null"], "minimum": 0, "maximum": 9223372036854775807},
+    "resources": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/resource"}}
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,48}$"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^(?=.*\\S)[^\\u0000-\\u001F\\u007F-\\u009F]+$"},
+    "property": {
+      "type": "object",
+      "required": ["id", "name", "type", "readable", "writable"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"$ref": "#/$defs/name"},
+        "type": {"$ref": "#/$defs/id", "description": "boolean, integer, number, string; unknown future types render without controls"},
+        "readable": {"const": true},
+        "writable": {"type": "boolean"},
+        "min": {"type": ["number", "null"]},
+        "max": {"type": ["number", "null"]},
+        "step": {"type": ["number", "null"]},
+        "unit": {"type": "string", "maxLength": 16, "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$"}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "string"}}}, "then": {"properties": {"writable": {"const": false}}}},
+        {
+          "if": {"properties": {"type": {"enum": ["integer", "number"]}, "writable": {"const": true}}},
+          "then": {
+            "required": ["min", "max", "step"],
+            "properties": {"min": {"type": "number"}, "max": {"type": "number"}, "step": {"type": "number", "exclusiveMinimum": 0}}
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "integer"}, "writable": {"const": true}}},
+          "then": {"properties": {
+            "min": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991},
+            "max": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991},
+            "step": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}
+          }}
+        }
+      ],
+      "additionalProperties": true
+    },
+    "resource": {
+      "type": "object",
+      "required": ["id", "name", "kind", "properties"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"$ref": "#/$defs/name"},
+        "kind": {"$ref": "#/$defs/id", "description": "Standard groups: binary-output, range-output, sensor. Custom groups remain compatible."},
+        "properties": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"$ref": "#/$defs/property"}}
+      },
+      "additionalProperties": true
+    }
+  },
+  "$comment": "Also validate unique resource/property IDs, min <= max, numeric finiteness, byte limits, and description/state identity/revision in application code. Standard kind conventions are documented separately."
+}

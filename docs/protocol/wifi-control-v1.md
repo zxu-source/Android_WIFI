@@ -2,6 +2,8 @@
 
 状态：安卓与 PC 模拟端已实现，ESP8266 固件待接入。传输：HTTP/1.1 + UTF-8 JSON。基础路径 `/api/v1`，协议标识 `protocolVersion: 1`。WiFi 是承载网络，命令控制外设属性。
 
+2026-10-16 补充：[设备功能清单详细规范](capability-list.md)，包含标准外设类型、自定义名称、多灯/风扇完整样例、JSON Schema与安卓自动加载行为。下文保留不带清单版本号的旧式样例作为兼容示例。
+
 ## 1. 标识与限制
 
 - `deviceId`：板端稳定标识；`bootId`：每次启动生成的会话标识。
@@ -10,6 +12,7 @@
 - resourceId/propertyId 使用 ASCII 字母、数字、点、下划线、横线，长度 1–48；禁止路径分隔符。
 - `requestId`：客户端 UUID；一次操作唯一。
 - `revision`：本次启动内的全局非负递增整数；输出变化或采样值变化时增加，未改变的幂等写不增加。客户端只在同一 bootId 内比较 revision。
+- `capabilitiesRevision`：device/state可选成对字段，标记功能清单版本；修改资源、名称、范围等时递增，安卓自动重拉清单。旧设备可两边都省略/null；字段仅一边存在或版本不匹配时不开启控制。
 - 固件最多 8 个资源，每资源最多 4 个属性；请求体最多 1024 字节，响应最多 16 KiB。超出限制明确报错，不截断成成功数据。
 
 ## 2. 接口
@@ -131,6 +134,7 @@ App 超时后不自动重发 PUT，应显示结果未知并 GET 状态。手动�
 | 404 | RESOURCE_NOT_FOUND / PROPERTY_NOT_FOUND | 外设或属性不存在 |
 | 405 | METHOD_NOT_ALLOWED | 方法不支持 |
 | 409 | DEVICE_RESTARTED | expectedBootId 不一致 |
+| 409 | CAPABILITIES_CHANGED | 可选：固件明确判断当前功能清单在操作期间变化；客户端遇此码重新加载 |
 | 413 | PAYLOAD_TOO_LARGE | 请求体超限 |
 | 415 | UNSUPPORTED_MEDIA_TYPE | 非 JSON 控制请求 |
 | 422 | INVALID_VALUE / READ_ONLY | 类型/范围/步长错误、写只读属性 |

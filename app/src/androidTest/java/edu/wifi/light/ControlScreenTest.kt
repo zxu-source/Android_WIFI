@@ -37,4 +37,20 @@ class ControlScreenTest {
         compose.onNodeWithTag("relay.second.on").assertDoesNotExist()
         compose.onNodeWithText("不支持的属性类型：future-type（不可操作）").performScrollTo().assertIsDisplayed()
     }
+    @Test fun namedFanUsesRangeControlAndEnforcesItsOwnStep() {
+        val property = PropertyDescription("speed", "风速", "number", true, true, 0.0, 100.0, 0.5, "%")
+        val fanKey = PropertyKey("motor.workbench", "speed")
+        val device = DeviceDescription("test", "boot", "测试设备", "test", listOf(ResourceDescription(fanKey.resourceId, "工作台风扇", "range-output", listOf(property))))
+        val state = ControlState(config = ConnectionConfig(mock = true), status = ConnectionStatus.CONNECTED, device = device,
+            snapshot = DeviceSnapshot("test", "boot", 0, mapOf(fanKey to Reading(PropertyValue.NumberValue(35.0), "good"))))
+        var sent: Pair<PropertyKey, PropertyValue>? = null
+        compose.setContent { WIFILightTheme { ControlScreen(state, DiscoveryState(), {}, {}, {}, {}, { key, value -> sent = key to value }, {}, {}, {}, {}, {}, {}) } }
+        compose.onNodeWithTag("control-list").performScrollToNode(hasSetTextAction())
+        compose.onNode(hasSetTextAction()).performTextReplacement("40.25")
+        compose.onNodeWithTag("control-list").performScrollToNode(hasText("设置数值"))
+        compose.onNodeWithText("设置数值").assertIsNotEnabled()
+        compose.onNode(hasSetTextAction()).performTextReplacement("40.5")
+        compose.onNodeWithText("设置数值").assertIsEnabled().performClick()
+        assertEquals(fanKey to PropertyValue.NumberValue(40.5), sent)
+    }
 }

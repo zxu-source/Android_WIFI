@@ -2,6 +2,8 @@
 
 日期：2026-10-09。状态：安卓首版已实施，真机和实物验收待完成。设计依据：[系统设计](../design/system-design.md)、[网络与权限补充设计](../design/network-and-permissions.md)、[协议 v1](../protocol/wifi-control-v1.md)、[实验要求](../requirements/lab12-android-wifi.md)。以下阶段保留规划顺序，实际完成项与检查见[安卓首版验证记录](../testing/android-first-release.md)。
 
+2026-10-16 功能清单增强：P1–P4 已进一步落实标准类型、自定义名称、自动获取与版本化更新、Schema及多外设样例。下位机开发优先对照[功能清单详细规范](../protocol/capability-list.md)，实际结果见[功能清单验证](../testing/capability-list-validation.md)。
+
 ## 1. 当前基线与已知条件
 
 - 开发开始时 Activity 仅显示 Hello Android；现在已实现外设控制界面、HTTP、模拟模式与设备发现。

@@ -1,6 +1,7 @@
 package edu.wifi.light.feature.control
 
 import edu.wifi.light.core.model.*
+import edu.wifi.light.domain.Validation
 
 object SnapshotRules {
     fun validate(description: DeviceDescription, snapshot: DeviceSnapshot) {
@@ -15,6 +16,11 @@ object SnapshotRules {
                 else -> true
             }
             if (!valid) throw DeviceException("INVALID_RESPONSE", "属性 ${r.id}.${p.id} 的回报类型与描述不一致")
+            if (p.controllable && reading.quality == "good") {
+                try { Validation.value(p, reading.value) } catch (_: DeviceException) {
+                    throw DeviceException("INVALID_RESPONSE", "属性 ${r.id}.${p.id} 的确认值超出功能清单声明的范围或步长")
+                }
+            }
         } }
     }
 }

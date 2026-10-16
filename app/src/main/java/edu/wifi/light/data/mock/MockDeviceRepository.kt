@@ -14,17 +14,23 @@ class MockDeviceRepository : DeviceRepository {
     private var closed = false
     private var generation = 1
     private var revision = 0L
+    private var capabilitiesRevision = 1L
+    private val extraResources = mutableListOf<ResourceDescription>()
     private val values = mutableMapOf(
         PropertyKey("led.main", "on") to Reading(PropertyValue.BooleanValue(false), "good"),
         PropertyKey("pwm.light", "level") to Reading(PropertyValue.NumberValue(35.0), "good"),
         PropertyKey("sensor.room", "temperature") to Reading(PropertyValue.NumberValue(24.5), "good"),
+        PropertyKey("relay.desk", "on") to Reading(PropertyValue.BooleanValue(false), "good"),
+        PropertyKey("fan.desk", "speed") to Reading(PropertyValue.NumberValue(40.0), "good"),
     )
     private val description get() = DeviceDescription("mock-device", "mock-boot-$generation", "模拟外设控制器", "mock-1.0", listOf(
         ResourceDescription("led.main", "主 LED", "binary-output", listOf(PropertyDescription("on", "开关", "boolean", true, true))),
+        ResourceDescription("relay.desk", "书桌台灯", "binary-output", listOf(PropertyDescription("on", "电源", "boolean", true, true))),
+        ResourceDescription("fan.desk", "桌面风扇", "range-output", listOf(PropertyDescription("speed", "风速", "number", true, true, 0.0, 100.0, 0.5, "%"))),
         ResourceDescription("pwm.light", "调光灯", "range-output", listOf(PropertyDescription("level", "亮度", "integer", true, true, 0.0, 100.0, 1.0, "%"))),
         ResourceDescription("sensor.room", "室温", "sensor", listOf(PropertyDescription("temperature", "温度", "number", true, false, unit = "°C"))),
         ResourceDescription("future.device", "扩展兼容示例", "custom", listOf(PropertyDescription("color", "新类型", "color", true, true))),
-    ))
+    ) + extraResources, capabilitiesRevision)
 
     private suspend fun waitForDevice() {
         delay(if (fault == MockFault.SLOW) 1600 else 150)
@@ -33,7 +39,7 @@ class MockDeviceRepository : DeviceRepository {
     override suspend fun describe(): DeviceDescription { waitForDevice(); return description }
     override suspend fun readState(): DeviceSnapshot {
         waitForDevice()
-        return DeviceSnapshot(description.deviceId, description.bootId, revision, values.toMap())
+        return DeviceSnapshot(description.deviceId, description.bootId, revision, values.toMap(), capabilitiesRevision)
     }
     override suspend fun setProperty(key: PropertyKey, value: PropertyValue, expectedBootId: String, requestId: String): WriteReceipt {
         waitForDevice()
@@ -51,8 +57,16 @@ class MockDeviceRepository : DeviceRepository {
     }
     fun reboot() {
         generation++; revision = 0
-        values[PropertyKey("led.main", "on")] = Reading(PropertyValue.BooleanValue(false), "good")
-        values[PropertyKey("pwm.light", "level")] = Reading(PropertyValue.NumberValue(0.0), "good")
+        description.resources.forEach { resource -> resource.properties.filter { it.controllable }.forEach { property ->
+            val reset = if (property.type == "boolean") PropertyValue.BooleanValue(false) else PropertyValue.NumberValue(property.min ?: 0.0)
+            values[PropertyKey(resource.id, property.id)] = Reading(reset, "good")
+        } }
+    }
+    fun addDemoResource() {
+        if (extraResources.isNotEmpty()) return
+        extraResources += ResourceDescription("switch.bedside", "床头灯", "binary-output", listOf(PropertyDescription("power", "照明", "boolean", true, true)))
+        values[PropertyKey("switch.bedside", "power")] = Reading(PropertyValue.BooleanValue(false), "good")
+        capabilitiesRevision++; revision++
     }
     override fun close() { closed = true }
 }

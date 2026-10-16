@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
                         }
                         runCatching { startActivity(intent) }.onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
                     }, onFault = model::setFault, onReboot = model::rebootMock,
+                    onRefreshCapabilities = model::reloadCapabilities, onAddMockResource = model::addMockResource,
                 )
             }
         }

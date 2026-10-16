@@ -27,6 +27,7 @@ data class ControlState(
     val propertyErrors: Map<PropertyKey, String> = emptyMap(),
     val error: String? = null,
     val lastSuccess: Long? = null,
+    val capabilitiesUpdatedAt: Long? = null,
     val refreshing: Boolean = false,
     val fault: MockFault = MockFault.NONE,
     val events: List<DiagnosticEvent> = emptyList(),
@@ -86,7 +87,7 @@ class ControlViewModel(
     fun disconnect() {
         session++; pollJob?.cancel(); pollJob = null; sessionJob?.cancel(); sessionJob = null
         repository?.close(); repository = null; scope = null
-        mutable.update { it.copy(status = ConnectionStatus.DISCONNECTED, device = null, snapshot = null, pending = emptyMap(), propertyErrors = emptyMap(), refreshing = false, error = null, lastSuccess = null, fault = MockFault.NONE) }
+        mutable.update { it.copy(status = ConnectionStatus.DISCONNECTED, device = null, snapshot = null, pending = emptyMap(), propertyErrors = emptyMap(), refreshing = false, error = null, lastSuccess = null, capabilitiesUpdatedAt = null, fault = MockFault.NONE) }
     }
 
     fun setForeground(active: Boolean) {
@@ -99,6 +100,12 @@ class ControlViewModel(
         pollJob = scope?.launch { while (isActive) { delay(2000); refresh() } }
     }
     fun refresh() {
+        refreshInternal(reloadCapabilities = false)
+    }
+    fun reloadCapabilities() {
+        refreshInternal(reloadCapabilities = true)
+    }
+    private fun refreshInternal(reloadCapabilities: Boolean) {
         val repo = repository ?: return
         if (!operations.tryLock()) return
         val id = session
@@ -111,7 +118,7 @@ class ControlViewModel(
                     if (id != session || !isActive) { replacement.close(); throw CancellationException() }
                     repo.close(); repository = replacement; active = replacement
                 }
-                synchronize(active, reload = mutable.value.status != ConnectionStatus.CONNECTED)
+                synchronize(active, reload = reloadCapabilities || mutable.value.status != ConnectionStatus.CONNECTED)
             }
             catch (e: CancellationException) { throw e } catch (e: Exception) { if (id == session) report(e) }
             finally { if (id == session) mutable.update { it.copy(refreshing = false) }; operations.unlock() }
@@ -120,19 +127,30 @@ class ControlViewModel(
 
     private suspend fun synchronize(repo: DeviceRepository, reload: Boolean = false) {
         val id = session
+        var loadedDescription = reload || mutable.value.device == null
         var description = if (reload) repo.describe() else mutable.value.device ?: repo.describe()
         var snapshot = repo.readState()
         if (snapshot.deviceId != description.deviceId) throw DeviceException("INVALID_RESPONSE", "设备身份与描述不一致")
-        if (snapshot.bootId != description.bootId || description.resources.any { r -> r.properties.any { p -> p.supported && PropertyKey(r.id, p.id) !in snapshot.readings } }) {
+        if (snapshot.bootId != description.bootId || snapshot.capabilitiesRevision != description.capabilitiesRevision || description.resources.any { r -> r.properties.any { p -> p.supported && PropertyKey(r.id, p.id) !in snapshot.readings } }) {
             description = repo.describe(); snapshot = repo.readState()
+            loadedDescription = true
         }
         if (snapshot.deviceId != description.deviceId || snapshot.bootId != description.bootId) throw DeviceException("DEVICE_RESTARTED", "设备正在重启，请稍后刷新")
+        if (snapshot.capabilitiesRevision != description.capabilitiesRevision) throw DeviceException("CAPABILITIES_CHANGED", "功能清单与状态版本不一致，暂不可控制，请重新获取")
         currentCoroutineContext().ensureActive()
         if (id != session) throw CancellationException()
         SnapshotRules.validate(description, snapshot)
         val old = mutable.value.snapshot
+        if (old?.bootId == snapshot.bootId && old.capabilitiesRevision != null &&
+            (snapshot.capabilitiesRevision == null || snapshot.capabilitiesRevision < old.capabilitiesRevision)) {
+            throw DeviceException("CAPABILITIES_CHANGED", "同一次启动的功能清单版本不可回退，请检查设备固件后重新连接")
+        }
         if (old?.bootId == snapshot.bootId && old.revision > snapshot.revision) return
-        mutable.update { it.copy(device = description, snapshot = snapshot, status = ConnectionStatus.CONNECTED, lastSuccess = System.currentTimeMillis(), error = null) }
+        val keys = description.resources.flatMap { r -> r.properties.map { PropertyKey(r.id, it.id) } }.toSet()
+        mutable.update { it.copy(device = description, snapshot = snapshot, status = ConnectionStatus.CONNECTED, lastSuccess = System.currentTimeMillis(),
+            capabilitiesUpdatedAt = if (loadedDescription) System.currentTimeMillis() else it.capabilitiesUpdatedAt,
+            propertyErrors = it.propertyErrors.filterKeys { key -> key in keys }, error = null) }
+        if (loadedDescription) event("已获取功能清单：${description.resources.size} 项外设，清单版本 ${description.capabilitiesRevision ?: "旧版未提供"}")
     }
 
     fun write(key: PropertyKey, value: PropertyValue) {
@@ -161,9 +179,10 @@ class ControlViewModel(
                 val message = readableError(e)
                 mutable.update { it.copy(propertyErrors = it.propertyErrors + (key to message)) }
                 report(e)
-                if (e is DeviceException && (e.outcomeUnknown || e.code == "DEVICE_RESTARTED")) {
+                val reloadRequired = e is DeviceException && e.code in setOf("DEVICE_RESTARTED", "CAPABILITIES_CHANGED", "RESOURCE_NOT_FOUND", "PROPERTY_NOT_FOUND")
+                if (e is DeviceException && (e.outcomeUnknown || reloadRequired)) {
                     try {
-                        synchronize(repo, reload = e.code == "DEVICE_RESTARTED")
+                        synchronize(repo, reload = reloadRequired)
                         event("已重新读取状态；未自动重发命令")
                         mutable.update { it.copy(propertyErrors = it.propertyErrors + (key to "$message；已重新读取设备状态")) }
                     } catch (readError: CancellationException) { throw readError } catch (readError: Exception) { report(readError) }
@@ -174,6 +193,7 @@ class ControlViewModel(
 
     fun setFault(fault: MockFault) { (repository as? MockDeviceRepository)?.fault = fault; mutable.update { it.copy(fault = fault) } }
     fun rebootMock() { (repository as? MockDeviceRepository)?.reboot(); refresh() }
+    fun addMockResource() { (repository as? MockDeviceRepository)?.addDemoResource(); refresh() }
     private fun readableError(e: Exception) = when (e) {
         is SecurityException -> "系统阻止局域网访问，请在应用权限中允许附近设备/局域网权限"
         is DeviceException -> "${e.code}：${e.message}"

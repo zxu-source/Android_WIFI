@@ -2,6 +2,8 @@
 
 此服务使用 `protocol/fixtures/` 的能力描述，模拟外设，不访问真实硬件。Python 3.10+，基本 HTTP 模式只使用标准库。
 
+默认使用 `capability-list.json` / `capability-state.json`，提供两盏不同名称的开关灯、风扇、调光灯和温度传感器；并携带匹配的capabilitiesRevision。旧式device/state样例仍保留用于兼容测试。
+
 在仓库根目录运行：
 
 ```powershell
@@ -27,3 +29,16 @@ python -m unittest discover -s tools/mock-device -p test_server.py
 ```
 
 停止使用 Ctrl+C；重新启动改变 bootId，输出恢复初始值。
+
+## 功能清单校验
+
+Schema为 `protocol/capability-list.schema.json`，详细字段见[下位机对接规范](../../docs/protocol/capability-list.md)。可选依赖仅用于这项校验，HTTP服务仍无需第三方库：
+
+```powershell
+python -m pip install -r tools/mock-device/schema-requirements.txt
+python tools/mock-device/validate_capabilities.py
+python tools/mock-device/validate_capabilities.py path/to/your-device.json
+python -m unittest discover -s tools/mock-device -p test_capability_schema.py
+```
+
+未安装jsonschema时，Schema专项测试会明确跳过，不能把跳过计为校验通过。工具还检查ID唯一和min≤max；最终固件响应长度及device/state一致性需要联调验证。
