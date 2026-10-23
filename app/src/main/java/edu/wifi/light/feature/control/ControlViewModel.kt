@@ -47,6 +47,7 @@ class ControlViewModel(
     private var pollJob: Job? = null
     private val operations = Mutex()
     private var foreground = false
+    private var foregroundGeneration = 0L
 
     fun configure(config: ConnectionConfig) {
         if (config == mutable.value.config) return
@@ -91,26 +92,25 @@ class ControlViewModel(
     }
 
     fun setForeground(active: Boolean) {
+        if (foreground != active) foregroundGeneration++
         foreground = active
-        if (active) { if (repository != null) { refresh(); startPolling() } }
+        if (active) { if (repository != null) { refresh(silent = true); startPolling() } }
         else { pollJob?.cancel(); pollJob = null }
     }
     private fun startPolling() {
         if (!foreground || repository == null || pollJob?.isActive == true) return
-        pollJob = scope?.launch { while (isActive) { delay(2000); refresh() } }
+        pollJob = scope?.launch { while (isActive) { delay(2000); refresh(silent = true) } }
     }
     fun refresh() {
-        refreshInternal(reloadCapabilities = false)
+        refresh(silent = false)
     }
-    fun reloadCapabilities() {
-        refreshInternal(reloadCapabilities = true)
-    }
-    private fun refreshInternal(reloadCapabilities: Boolean) {
+    private fun refresh(silent: Boolean) {
         val repo = repository ?: return
+        if (mutable.value.pending.isNotEmpty()) return
         if (!operations.tryLock()) return
         val id = session
         scope?.launch(start = CoroutineStart.UNDISPATCHED) {
-            mutable.update { it.copy(refreshing = true) }
+            if (!silent) mutable.update { it.copy(refreshing = true) }
             try {
                 var active = repo
                 if (mutable.value.status == ConnectionStatus.RECOVERING && !mutable.value.config.mock) {
@@ -118,10 +118,10 @@ class ControlViewModel(
                     if (id != session || !isActive) { replacement.close(); throw CancellationException() }
                     repo.close(); repository = replacement; active = replacement
                 }
-                synchronize(active, reload = reloadCapabilities || mutable.value.status != ConnectionStatus.CONNECTED)
+                synchronize(active, reload = mutable.value.status != ConnectionStatus.CONNECTED)
             }
             catch (e: CancellationException) { throw e } catch (e: Exception) { if (id == session) report(e) }
-            finally { if (id == session) mutable.update { it.copy(refreshing = false) }; operations.unlock() }
+            finally { if (!silent && id == session) mutable.update { it.copy(refreshing = false) }; operations.unlock() }
         }
     }
 
@@ -145,7 +145,10 @@ class ControlViewModel(
             (snapshot.capabilitiesRevision == null || snapshot.capabilitiesRevision < old.capabilitiesRevision)) {
             throw DeviceException("CAPABILITIES_CHANGED", "同一次启动的功能清单版本不可回退，请检查设备固件后重新连接")
         }
-        if (old?.bootId == snapshot.bootId && old.revision > snapshot.revision) return
+        if (old?.bootId == snapshot.bootId && old.revision > snapshot.revision) {
+            if (description != mutable.value.device) throw DeviceException("INVALID_RESPONSE", "功能清单变化时状态版本不可回退，暂不可控制")
+            return
+        }
         val keys = description.resources.flatMap { r -> r.properties.map { PropertyKey(r.id, it.id) } }.toSet()
         mutable.update { it.copy(device = description, snapshot = snapshot, status = ConnectionStatus.CONNECTED, lastSuccess = System.currentTimeMillis(),
             capabilitiesUpdatedAt = if (loadedDescription) System.currentTimeMillis() else it.capabilitiesUpdatedAt,
@@ -155,17 +158,30 @@ class ControlViewModel(
 
     fun write(key: PropertyKey, value: PropertyValue) {
         val current = mutable.value
-        if (current.status != ConnectionStatus.CONNECTED || !foreground) return
+        if (current.status != ConnectionStatus.CONNECTED || !foreground || current.pending.isNotEmpty()) return
         val repo = repository ?: return
         val description = current.device ?: return
         val property = description.resources.find { it.id == key.resourceId }?.properties?.find { it.id == key.propertyId } ?: return
         try { Validation.value(property, value) } catch (e: Exception) { report(e); return }
-        if (!operations.tryLock()) return
         val requestId = UUID.randomUUID().toString()
         val id = session
+        val activeGeneration = foregroundGeneration
         mutable.update { it.copy(pending = it.pending + (key to value), propertyErrors = it.propertyErrors - key, error = null) }
         scope?.launch(start = CoroutineStart.UNDISPATCHED) {
+            var locked = false
             try {
+                operations.lock(); locked = true
+                currentCoroutineContext().ensureActive()
+                if (id != session || !foreground || activeGeneration != foregroundGeneration || repository !== repo) throw CancellationException()
+                val latest = mutable.value
+                if (latest.status != ConnectionStatus.CONNECTED) throw DeviceException("NOT_CONNECTED", "连接状态已变化，未发送控制，请恢复连接后重试")
+                val latestDescription = latest.device ?: throw CancellationException()
+                if (latestDescription.bootId != description.bootId) throw DeviceException("DEVICE_RESTARTED", "等待期间设备已重启，未发送控制，请确认状态后重新操作")
+                val latestProperty = latestDescription.resources.find { it.id == key.resourceId }?.properties?.find { it.id == key.propertyId }
+                if (latestDescription.capabilitiesRevision != description.capabilitiesRevision || latestProperty != property) throw DeviceException("CAPABILITIES_CHANGED", "等待期间外设能力已变化，未发送控制，请确认新面板后重新操作")
+                val reading = latest.snapshot?.readings?.get(key)
+                if (reading?.quality != "good" || reading.value == PropertyValue.Unavailable) throw DeviceException("STATE_UNAVAILABLE", "外设确认状态不可用，未发送控制")
+                Validation.value(property, value)
                 event("发送 $key，requestId=$requestId")
                 val receipt = repo.setProperty(key, value, description.bootId, requestId)
                 currentCoroutineContext().ensureActive()
@@ -187,7 +203,7 @@ class ControlViewModel(
                         mutable.update { it.copy(propertyErrors = it.propertyErrors + (key to "$message；已重新读取设备状态")) }
                     } catch (readError: CancellationException) { throw readError } catch (readError: Exception) { report(readError) }
                 }
-            } finally { if (id == session) mutable.update { it.copy(pending = it.pending - key) }; operations.unlock() }
+            } finally { if (id == session) mutable.update { it.copy(pending = it.pending - key) }; if (locked) operations.unlock() }
         }
     }
 

@@ -51,12 +51,16 @@ class CapabilityRefreshTest {
         assertEquals(ConnectionStatus.CONNECTED, model.state.value.status)
         model.disconnect()
     }
-    @Test fun manualRefreshUpdatesLegacyNamesWithoutRebootOrVersionField() = runTest(dispatcher) {
+    @Test fun reconnectUpdatesLegacyNamesWithoutRebootOrVersionField() = runTest(dispatcher) {
         val repository = Repository().apply { device = device.copy(capabilitiesRevision = null); state = state.copy(capabilitiesRevision = null) }
         val model = ControlViewModel(ConnectionConfig(mock = true), { repository })
         model.connect(); runCurrent(); repository.calls.clear()
         repository.device = repository.device.copy(resources = repository.device.resources.map { it.copy(name = "重新命名-${it.name}") })
-        model.reloadCapabilities(); runCurrent()
+        model.refresh(); runCurrent()
+        assertEquals(listOf("state"), repository.calls)
+        assertFalse(model.state.value.device!!.resources.any { it.name.startsWith("重新命名-") })
+        repository.calls.clear()
+        model.disconnect(); model.connect(); runCurrent()
         assertEquals(listOf("device", "state"), repository.calls)
         assertTrue(model.state.value.device!!.resources.all { it.name.startsWith("重新命名-") })
         model.disconnect()

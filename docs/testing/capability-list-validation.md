@@ -2,6 +2,8 @@
 
 日期：2026-10-16。版本：1.1，versionCode=2，debug APK。实现依据为[功能清单设计](../design/capability-list-design.md)和[下位机对接规范](../protocol/capability-list.md)。
 
+本文件是 v1.1 的历史验证记录，其中手动清单入口与截图不代表最新界面。后续 v1.1.1 按用户要求取消该入口，见[精简清单入口验证](capability-reconnect-validation.md)。
+
 ## 已实现
 
 - 连接时自动获取 device 清单，再读取 state，校验一致后开放控制。

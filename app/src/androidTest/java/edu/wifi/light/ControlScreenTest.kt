@@ -32,6 +32,15 @@ class ControlScreenTest {
         compose.onNodeWithTag("relay.second.on").assertDoesNotExist()
         compose.onNodeWithText("只读").performScrollTo().assertIsDisplayed()
     }
+    @Test fun deviceSummaryHasNoManualCapabilityRefreshAction() {
+        display()
+        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("capability-summary"))
+        compose.onNodeWithTag("capability-summary").assertIsDisplayed()
+        compose.onNodeWithText("更新功能清单").assertDoesNotExist()
+        compose.onNodeWithTag("refresh-capabilities").assertDoesNotExist()
+        compose.onNodeWithTag("connect").performScrollTo().assertIsEnabled()
+        compose.onNodeWithText("读取状态").assertExists()
+    }
     @Test fun unknownTypeIsVisibleButNotControllable() {
         display(type = "future-type")
         compose.onNodeWithTag("relay.second.on").assertDoesNotExist()

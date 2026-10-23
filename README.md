@@ -11,6 +11,9 @@
 - [通信协议 v1](docs/protocol/wifi-control-v1.md)：设备能力、读写接口、错误和一致性规则。
 - [功能清单对接规范](docs/protocol/capability-list.md)：标准类型、自定义名称、自动获取/更新、完整样例和JSON Schema；下位机开发优先阅读。
 - [v1.1 功能清单验证](docs/testing/capability-list-validation.md)：38 项 JVM、9 项模拟器、9 项服务/清单测试及新版界面截图。
+- [v1.1.1 精简清单入口](docs/testing/capability-reconnect-validation.md)：移除手动刷新清单，主动重载使用已有重连操作。
+- [静默刷新设计](docs/design/quiet-refresh-design.md)：自动轮询不闪烁、不推挤布局；读取期间的控制安全排队。
+- [v1.1.2 刷新验证](docs/testing/quiet-refresh-validation.md)：50 项 JVM、13 项模拟器测试与固定布局回归结果。
 - [实施计划](docs/plans/implementation-plan.md)：安卓优先的阶段、任务、依赖和验收标准。
 - [验收与真机联调](docs/testing/acceptance.md)：模拟验证、实物演示和实验报告证据。
 - [安装与操作说明](docs/android/usage.md)：APK、模拟体验、手机热点与局域网操作。

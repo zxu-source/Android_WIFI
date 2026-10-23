@@ -26,7 +26,7 @@ class MainActivitySmokeTest {
         compose.onNodeWithTag("led.main.on").performScrollTo().assertIsOn()
         compose.onNodeWithText("确认状态：开启 ").assertExists()
         saveScreenshot("mock-after-recreation.png")
-        compose.onNodeWithTag("connect").performScrollTo()
+        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("connect"))
         compose.onNodeWithText("真实设备").performClick()
     }
 
@@ -46,10 +46,7 @@ class MainActivitySmokeTest {
         compose.onNodeWithTag("switch.bedside.power").assertIsOff().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("确认状态：开启 ").fetchSemanticsNodes().isNotEmpty() }
         saveScreenshot("capability-new-light.png")
-        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("refresh-capabilities"))
-        compose.onNodeWithTag("refresh-capabilities").performClick()
-        compose.waitForIdle()
-        compose.onNodeWithTag("connect").performScrollTo()
+        compose.onNodeWithTag("control-list").performScrollToNode(hasTestTag("connect"))
         compose.onNodeWithText("真实设备").performClick()
     }
 

@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import edu.wifi.light.core.model.*
 import edu.wifi.light.data.discovery.DiscoveredDevice
@@ -32,19 +33,18 @@ fun ControlScreen(
     onRefresh: () -> Unit, onWrite: (PropertyKey, PropertyValue) -> Unit,
     onDiscover: () -> Unit, onStopDiscovery: () -> Unit, onSelect: (DiscoveredDevice) -> Unit,
     onSettings: (String) -> Unit, onFault: (MockFault) -> Unit, onReboot: () -> Unit,
-    onRefreshCapabilities: () -> Unit = onRefresh,
     onAddMockResource: () -> Unit = {},
 ) {
     var showDiagnostics by rememberSaveable { mutableStateOf(false) }
     val busy = state.pending.isNotEmpty() || state.refreshing
     Scaffold { insets ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(insets).testTag("control-list"), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item {
+            item(key = "header") {
                 Text("WiFi 外设遥控", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text("手机发出命令 · 下位机驱动外设", style = MaterialTheme.typography.bodyMedium)
             }
-            item {
-                Section("连接设备") {
+            item(key = "connection") {
+                Section("连接设备", Modifier.testTag("connection-card")) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(selected = !state.config.mock, onClick = { onConfig(state.config.copy(mock = false)) }, label = { Text("真实设备") })
                         FilterChip(selected = state.config.mock, onClick = { onConfig(state.config.copy(mock = true)) }, label = { Text("模拟模式") }, modifier = Modifier.testTag("mock-mode"))
@@ -68,11 +68,13 @@ fun ControlScreen(
                         if (state.device != null) OutlinedButton(onClick = onRefresh, enabled = !busy) { Text("读取状态") }
                     }
                     Text("${state.status.label}${state.lastSuccess?.let { " · 最近确认 ${time(it)}" }.orEmpty()}", modifier = Modifier.testTag("connection-status"))
-                    if (state.status == ConnectionStatus.CONNECTING || state.refreshing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Box(Modifier.fillMaxWidth().height(4.dp).testTag("read-progress-slot")) {
+                        if (state.status == ConnectionStatus.CONNECTING || state.refreshing) LinearProgressIndicator(modifier = Modifier.fillMaxSize().testTag("read-progress"))
+                    }
                     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
             }
-            if (!state.config.mock) item {
+            if (!state.config.mock) item(key = "discovery") {
                 Section("发现局域网设备") {
                     Text(discovery.message, style = MaterialTheme.typography.bodySmall)
                     Button(onClick = if (discovery.searching) onStopDiscovery else onDiscover) { Text(if (discovery.searching) "停止发现" else "发现设备") }
@@ -85,16 +87,15 @@ fun ControlScreen(
                 }
             }
             state.device?.let { device ->
-                item { Section(device.name) {
+                item(key = "device-summary") { Section(device.name) {
                     Text("${device.deviceId} · 固件 ${device.firmwareVersion} · 协议 v1", style = MaterialTheme.typography.bodySmall)
                     Text("功能清单：${device.resources.size} 项外设 · ${device.resources.sumOf { r -> r.properties.count { it.controllable } }} 项可控属性", modifier = Modifier.testTag("capability-summary"))
                     Text("清单版本：${device.capabilitiesRevision?.toString() ?: "旧版设备未提供"}${state.capabilitiesUpdatedAt?.let { " · 获取于 ${time(it)}" }.orEmpty()}", style = MaterialTheme.typography.bodySmall)
-                    OutlinedButton(onClick = onRefreshCapabilities, enabled = !busy, modifier = Modifier.testTag("refresh-capabilities")) { Text("更新功能清单") }
-                    if (device.resources.isEmpty()) Text("设备清单为空，暂时没有可显示的外设。可更新功能清单重试。")
+                    if (device.resources.isEmpty()) Text("设备清单为空，暂时没有可显示的外设。如需重新获取，请断开后重新连接。")
                     Text("外设回报为逻辑输出状态；没有反馈传感器时不代表触点/负载实测。", style = MaterialTheme.typography.bodySmall)
                 } }
-                items(device.resources, key = { it.id }) { resource ->
-                    Section(resource.name) {
+                items(device.resources, key = { "resource:${it.id}" }) { resource ->
+                    Section(resource.name, Modifier.testTag("resource:${resource.id}")) {
                         Text("${resource.kindLabel} · ${resource.id}", style = MaterialTheme.typography.labelSmall)
                         resource.properties.forEach { property ->
                             key(property.id) {
@@ -107,14 +108,14 @@ fun ControlScreen(
                     }
                 }
             }
-            if (state.config.mock && state.device != null) item {
+            if (state.config.mock && state.device != null) item(key = "mock-tools") {
                 Section("模拟故障测试") {
                     Choice("场景", state.fault.label, MockFault.entries.map { it.label }) { label -> onFault(MockFault.entries.first { it.label == label }) }
                     OutlinedButton(onClick = onReboot, enabled = !busy) { Text("模拟下位机重启") }
                     OutlinedButton(onClick = onAddMockResource, enabled = !busy, modifier = Modifier.testTag("mock-add-resource")) { Text("模拟新增一盏灯") }
                 }
             }
-            item {
+            item(key = "diagnostics") {
                 TextButton(onClick = { showDiagnostics = !showDiagnostics }) { Text(if (showDiagnostics) "收起诊断记录" else "查看诊断记录（${state.events.size}）") }
                 if (showDiagnostics) state.events.forEach { event -> Text("${time(event.time)} ${event.message}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 4.dp)) }
             }
@@ -123,8 +124,8 @@ fun ControlScreen(
 }
 
 @Composable
-private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+private fun Section(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Card(modifier = modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         content()
     } }
@@ -173,7 +174,9 @@ private fun PropertyControl(property: PropertyDescription, reading: Reading?, pe
                 OutlinedButton(onClick = { onWrite(PropertyValue.NumberValue(number!!)) }, enabled = enabled && good && validNumber) { Text("设置数值") }
             }
         }
-        pending?.let { Text("等待设备确认：${formatValue(it)}", color = MaterialTheme.colorScheme.primary) }
+        if (property.controllable) Text(pending?.let { "等待设备确认：${formatValue(it)}" }.orEmpty(),
+            color = MaterialTheme.colorScheme.primary, minLines = 1, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.testTag("pending:$tag"))
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
     }
 }
