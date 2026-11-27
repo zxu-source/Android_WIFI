@@ -1,0 +1,531 @@
+% !TEX program = xelatex
+\documentclass[10.5pt,a4paper]{ctexart}
+
+% ==================== 基础排版与页面设置 ====================
+\usepackage[top=2.2cm, bottom=2.2cm, left=2.3cm, right=2.3cm, headheight=16pt]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{xurl}
+\usepackage{needspace}
+\usepackage{etoolbox}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+\usepackage{hyperref}
+
+% ==================== 字体设置（正文纯黑宋体 + Times New Roman） ====================
+\setmainfont{Times New Roman}
+\setCJKmainfont{SimSun}[AutoFakeBold=2.2]
+\setCJKsansfont{SimHei}
+\setCJKmonofont{FangSong}
+
+% ==================== 极简配色（正文全黑，仅代码块淡蓝底 + 图示素雅灰蓝） ====================
+\definecolor{CodeBg}{HTML}{EEF4FB}
+\definecolor{CodeBorder}{HTML}{B8CBE0}
+\definecolor{CodeKw}{HTML}{1E3A5F}
+\definecolor{CodeMute}{HTML}{475569}
+\definecolor{DiagLine}{HTML}{1E293B}
+\definecolor{DiagFill}{HTML}{F4F7FB}
+\definecolor{DiagFillAlt}{HTML}{EBF1F8}
+\definecolor{DiagDark}{HTML}{1E293B}
+
+% ==================== 超链接纯黑 ====================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=black,
+    citecolor=black,
+    pdftitle={实验27 基于Android平台的无线WiFi控制实验报告},
+    pdfauthor={周徐, 李一康}
+}
+
+% ==================== 标题格式（加大加粗、纯黑、无长横线、智能防孤标题） ====================
+\titleformat{\section}
+    {\needspace{7\baselineskip}\fontsize{16pt}{20pt}\selectfont\bfseries\color{black}}
+    {\thesection}{0.8em}{}
+\titlespacing*{\section}{0pt}{16pt}{8pt}
+
+\titleformat{\subsection}
+    {\needspace{4\baselineskip}\fontsize{13pt}{17pt}\selectfont\bfseries\color{black}}
+    {\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{5pt}
+
+\titleformat{\subsubsection}
+    {\needspace{3\baselineskip}\fontsize{11pt}{15pt}\selectfont\bfseries\color{black}}
+    {\thesubsubsection}{0.5em}{}
+\titlespacing*{\subsubsection}{0pt}{7pt}{3pt}
+
+% ==================== 页眉页脚（纯黑、取消页眉横线） ====================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\color{black}近代无线电实验 · 实验 27：基于 Android 平台的无线 WiFi 控制}
+\fancyhead[R]{\footnotesize\color{black}SmartLife Edge 智能家居控制系统}
+\fancyfoot[C]{\footnotesize\color{black}第 \thepage\ 页}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\linespread{1.22}
+\setlength{\parskip}{2.5pt}
+\emergencystretch=3em
+\setlist[itemize]{leftmargin=1.8em, itemsep=1.5pt, topsep=2pt}
+\setlist[enumerate]{leftmargin=1.8em, itemsep=1.5pt, topsep=2pt}
+\captionsetup{font={small,bf}, labelfont={bf,color=black}, textfont={color=black}}
+
+\newcommand{\code}[1]{{\ttfamily\small\nolinkurl{#1}}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\renewcommand{\lstlistingname}{代码}
+% ==================== 代码块样式（淡蓝底） ====================
+\lstset{
+    backgroundcolor=\color{CodeBg},
+    basicstyle=\ttfamily\scriptsize\color{black},
+    keywordstyle=\bfseries\color{CodeKw},
+    commentstyle=\color{CodeMute},
+    stringstyle=\color{black},
+    numberstyle=\tiny\color{CodeMute},
+    numbers=left,
+    numbersep=7pt,
+    frame=single,
+    rulecolor=\color{CodeBorder},
+    breaklines=true,
+    breakatwhitespace=false,
+    tabsize=2,
+    showstringspaces=false,
+    xleftmargin=1.4em,
+    framexleftmargin=1.1em,
+    aboveskip=5pt,
+    belowskip=5pt
+}
+
+\begin{document}
+
+% ==================== 封面页（独立一页，无装饰横线、无彩色框） ====================
+\begin{titlepage}
+    \centering
+    \vspace*{1.6cm}
+    {\fontsize{18pt}{24pt}\selectfont\bfseries 近代无线电实验报告}\\[1.6cm]
+
+    {\fontsize{22pt}{30pt}\selectfont\bfseries 实验 27：基于 Android 平台的无线 WiFi 控制}\\[0.8cm]
+    {\fontsize{15pt}{22pt}\selectfont\bfseries SmartLife Edge：基于自描述物模型与边缘自治的\\局域网智能家居控制系统}\\[2.2cm]
+
+    \renewcommand{\arraystretch}{1.7}
+    \begin{tabular}{rl}
+        \textbf{学\ 院\ /\ 专\ 业：} & \underline{\makebox[7.2cm][c]{}} \\
+        \textbf{小\ 组\ 成\ 员：} & \underline{\makebox[7.2cm][c]{周徐（上位机）、李一康（下位机）}} \\
+        \textbf{学\hspace{3em}号：} & \underline{\makebox[7.2cm][c]{}} \\
+        \textbf{指\ 导\ 教\ 师：} & \underline{\makebox[7.2cm][c]{}} \\
+        \textbf{实\ 验\ 日\ 期：} & \underline{\makebox[7.2cm][c]{2026 年 11 月}} \\
+    \end{tabular}
+
+    \vfill
+    \small
+    上位机仓库：\code{https://github.com/zxu-source/Android_WIFI}（\code{v1.1.2}）\\[3pt]
+    下位机仓库：\code{https://github.com/lyk82468246/ESP8266_Remote}（\code{v0.9.0}）
+    \vspace*{0.8cm}
+\end{titlepage}
+
+% ==================== 目录页（独立一页） ====================
+\clearpage
+\thispagestyle{plain}
+\renewcommand{\contentsname}{\fontsize{16pt}{20pt}\selectfont\bfseries 目\quad 录}
+\tableofcontents
+
+% ==================== 正文开始（另起一页，章间自然顺排防大空白） ====================
+\clearpage
+\section{实验目的与系统总体设计}
+
+\subsection{实验目的与任务说明}
+按照《实验 27 基于 Android 平台的无线 WiFi 控制》指导书，本实验旨在掌握 Android 应用开发基础与核心组件使用，理解 Android 智能终端与嵌入式 Wi-Fi 模块的 C/S 通信机制，并完成一套可操作的无线外设控制系统。
+
+原指导书以早期 Java、Eclipse 与 ADT 工具链为例介绍 Android 开发流程；鉴于旧工具链早已停止维护且无法适配现代移动设备，本项目在全面落实全部实验要求的前提下，采用现代 \textbf{Android Studio + Kotlin + Jetpack Compose}（兼容 Android 6.0/API 23 至 Android 17/API 37）与 \textbf{PlatformIO + ESP8266 Arduino Core} 工具链进行工程化实现。针对实验要求的三项任务，本系统落实如下：
+\begin{enumerate}
+    \item \textbf{无线 Wi-Fi 外设闭环控制}：以 Wi-Fi 作为无线通信承载通道，由 Android 手机遥控 ESP8266 驱动 7 项真实外设，构建“玄关微波雷达无感迎宾 + 客厅/书房双区物理旋钮与手机远程协同调光”的完整智能家居闭环，而非仅验证网络连接。
+    \item \textbf{自适应 Android 客户端设计}：摒弃固定写死按钮的传统做法，采用“自描述能力清单”动态生成开关、滑块与只读传感器仪表，支持 2\,s 静默轮询零闪烁同步与离线故障模拟。
+    \item \textbf{嵌入式服务器端通信实现}：设计 \texttt{WiFi Control Protocol v1}（HTTP/1.1 + 严格 JSON），下位机实现非阻塞 256\,B 分片 HTTP 状态机、10 道参数校验防火墙、事件驱动 mDNS 发现及 GPIO 回读确认。
+\end{enumerate}
+
+\subsection{C/S 系统总体架构与组网拓扑}
+系统遵循指导书的 C/S 架构，由 ESP8266 边缘控制器作为本地服务器、Android 手机作为客户端，整体分层结构如图~\ref{fig:sys-arch} 所示。
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.92\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=0.38cm and 0.85cm,
+    box/.style={rectangle, rounded corners=3pt, draw=DiagLine, fill=DiagFill, text width=4.3cm, align=center, minimum height=0.78cm, font=\footnotesize},
+    group/.style={rectangle, rounded corners=5pt, draw=DiagLine, thick, inner sep=7pt, fill=white},
+    midbox/.style={rectangle, rounded corners=4pt, draw=DiagDark, fill=DiagFillAlt, text=black, text width=2.5cm, align=center, minimum height=3.55cm, font=\footnotesize},
+    arr/.style={-{Stealth[length=4.5pt]}, thick, draw=DiagLine},
+    darr/.style={{Stealth[length=4.5pt]}-{Stealth[length=4.5pt]}, very thick, draw=DiagLine}
+]
+    \node[box] (ui) {\textbf{UI 渲染层 (ControlScreen)}\\Jetpack Compose 动态控件注册表};
+    \node[box, below=of ui] (vm) {\textbf{状态调度层 (ControlViewModel)}\\StateFlow / Mutex 串行 / 静默轮询};
+    \node[box, below=of vm] (repo) {\textbf{仓库抽象层 (DeviceRepository)}\\HttpDeviceRepository / Mock 模拟};
+    \node[box, below=of repo] (net) {\textbf{网络发现层 (NetworkRouter/NSD)}\\mDNS 发现 / Socket 绑定 / API 37 权限};
+
+    \node[midbox, right=0.8cm of $(vm.east)!0.5!(repo.east)$] (wifi) {\textbf{2.4\,GHz WLAN}\\[5pt]\scriptsize HTTP/1.1 + 严格 JSON\\WiFi Control v1\\JSON Schema 校验\\[5pt]\texttt{\_wifi-control}\\\texttt{.\_tcp.local.}\\[5pt]去中心化纯局域网\\零云端低延迟};
+
+    \node[box, right=0.8cm of wifi, yshift=2.1cm] (http) {\textbf{非阻塞 HTTP 状态机 (.ino)}\\256\,B 分片收发 / 1.5s--5s 超时};
+    \node[box, below=of http] (api) {\textbf{协议与安检层 (Api / StrictJson)}\\10 道防火墙 / bootId 锁 / revision};
+    \node[box, below=of api] (reg) {\textbf{边缘自治核心 (ResourceRegistry)}\\引脚审计 / 20\,Hz 联动 / 雷达覆盖};
+    \node[box, below=of reg] (drv) {\textbf{硬件驱动层 (Peripheral)}\\GPIO 回读 / 1\,kHz PWM / D7 ISR / A0};
+
+    \draw[arr] (ui) -- (vm); \draw[arr] (vm) -- (repo); \draw[arr] (repo) -- (net);
+    \draw[arr] (http) -- (api); \draw[arr] (api) -- (reg); \draw[arr] (reg) -- (drv);
+    \draw[darr] (net.east) -- ++(0.32,0) |- (wifi.west);
+    \draw[darr] (wifi.east) -| ++(0.32,0) |- (http.west);
+
+    \begin{scope}[on background layer]
+        \node[group, fit=(ui)(net), label={[font=\small\bfseries]above:Android 上位机 (v1.1.2)}] {};
+        \node[group, fit=(http)(drv), label={[font=\small\bfseries]above:ESP8266 边缘服务器 (v0.9.0)}] {};
+    \end{scope}
+\end{tikzpicture}%
+}
+\caption{SmartLife Edge 上下位机分层架构与双向闭环数据流}
+\label{fig:sys-arch}
+\end{figure}
+
+相比自定义 TCP（需自研分帧与重连工具）和 MQTT（需额外搭建 Broker 服务器），本系统选用 \textbf{HTTP/1.1 + JSON 能力描述协议}，在 ESP8266 仅 80\,KB RAM 的约束下兼顾了 REST 语义清晰、故障边界明确与易于契约测试的优势。网络部署统一支持三种拓扑：（1）默认由手机开启 2.4\,GHz 热点（\code{SmartLife}），ESP8266 以 STA 模式接入，App 走系统路由；（2）双方接入同一家庭 WLAN 路由器；（3）应急无网环境下使用 \code{nodemcuv2_ap} 板端 SoftAP 热点。由于 DHCP 分配地址不固定为 \code{192.168.4.1}，下位机在获取 IP 后广播 \code{_wifi-control._tcp.local.} mDNS 服务，上位机通过 NSD 零配置发现设备，并保留串口 IP 手动输入兜底。
+
+% ==================== 第 2 章（另起一页） ====================
+\section{硬件平台搭建与电气安全设计}
+
+\subsection{NodeMCU V3 引脚规划与家居分区映射}
+下位机核心采用 \textbf{NodeMCU V3（ESP-12E / ESP8266EX）}，逻辑电平 3.3\,V。引脚分配严格避开串口（GPIO1/3）、片外 Flash（GPIO6--11）及启动配置风险脚（GPIO0/15），固件在启动前对全部注册引脚执行冲突审计。7 项真实外设的引脚与智能家居分区映射见表~\ref{tab:pinout}。
+
+\begin{table}[htbp]
+\centering
+\caption{NodeMCU V3 外设引脚分配与智能家居分区映射}
+\label{tab:pinout}
+\footnotesize
+\begin{tabularx}{\textwidth}{p{0.8cm} p{1.2cm} >{\raggedright\arraybackslash}p{3.1cm} p{2.3cm} Y}
+\toprule
+\textbf{丝印} & \textbf{GPIO} & \textbf{API 资源 / 属性} & \textbf{家居功能分区} & \textbf{电气配置与控制特性} \\
+\midrule
+D4 & GPIO2 & \code{led.main} / \code{on} & 玄关迎宾主灯 & 板载 LED，低电平亮；受雷达驱动且支持手机临时覆盖 \\
+D1 & GPIO5 & \code{led.red} / \code{on} & 客厅托管指示 & 红 LED，1\,k$\Omega$ 限流；\code{false} 本地旋钮 / \code{true} 手机锁管 \\
+D2 & GPIO4 & \code{led.green} / \code{on} & 书房托管指示 & 绿 LED，1\,k$\Omega$ 限流；与客厅区完全独立解耦 \\
+D5 & GPIO14 & \code{pwm.red} / \code{level} & 客厅调光主灯 & 1\,kHz 软件 PWM（0--100\%），独立 1\,k$\Omega$ 限流 \\
+D6 & GPIO12 & \code{pwm.green} / \code{level} & 书房氛围调光 & 1\,kHz 软件 PWM（0--100\%），独立 1\,k$\Omega$ 限流 \\
+D7 & GPIO13 & \code{sensor.microwave} / \code{detected, offDelayMs} & 玄关微波雷达 & \code{INPUT_PULLUP}，低电平有效，\code{CHANGE} 硬件中断 \\
+A0 & ADC & \code{sensor.pot} / \code{raw, voltage} & 墙面调光旋钮 & 3.3\,V 供电经 33\,k$\Omega$/10\,k$\Omega$ 分压，20\,Hz 采样 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{外围保护电路与关键参数计算}
+硬件外围保护电路拓扑如图~\ref{fig:hw-circuit} 所示。所有接线均在断电状态下核验完成，重点落实三项电气安全保护：
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.94\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=0.32cm and 2.4cm,
+    mcu/.style={rectangle, rounded corners=4pt, draw=DiagLine, very thick, fill=DiagFillAlt, minimum width=3.1cm, minimum height=6.9cm, align=center, font=\small\bfseries},
+    peri/.style={rectangle, rounded corners=3pt, draw=DiagLine, fill=DiagFill, text width=7.2cm, align=left, font=\footnotesize, inner sep=5.5pt},
+    pinlbl/.style={font=\ttfamily\footnotesize\bfseries, color=black},
+    wire/.style={thick, draw=DiagLine}
+]
+    \node[peri] (ledr) {\textbf{客厅暖光区（红）}\\D1 $\rightarrow$ 1\,k$\Omega$ $\rightarrow$ 红开关 LED $\rightarrow$ GND；\quad D5 $\rightarrow$ 1\,k$\Omega$ $\rightarrow$ 红 PWM LED $\rightarrow$ GND};
+    \node[peri, below=of ledr] (ledg) {\textbf{书房氛围区（绿）}\\D2 $\rightarrow$ 1\,k$\Omega$ $\rightarrow$ 绿开关 LED $\rightarrow$ GND；\quad D6 $\rightarrow$ 1\,k$\Omega$ $\rightarrow$ 绿 PWM LED $\rightarrow$ GND};
+    \node[peri, below=of ledg] (mw) {\textbf{玄关微波雷达干接点}\\COM 接 D7（内部上拉），NO 接 GND；空闲开路 HIGH(\texttt{false})，触发闭合 LOW(\texttt{true})};
+    \node[peri, below=of mw] (pot) {\textbf{墙面电位器与防过压分压}\\3V3--电位器--GND；滑动端 $\rightarrow$ 33\,k$\Omega$ $\rightarrow$ A0，同时经 10\,k$\Omega$ 下拉至 GND（上限 0.77\,V）};
+
+    \node[mcu, left=2.5cm of $(ledr.west)!0.5!(pot.west)$] (esp) {NodeMCU V3\\(ESP8266EX)\\[6pt]\footnotesize\normalfont 3.3\,V Logic\\Wi-Fi 2.4\,GHz\\[5pt]\scriptsize 板载 D4/GPIO2\\低电平有效 LED};
+
+    \draw[wire] (esp.east |- ledr.west) -- node[above, pinlbl] {D1 / D5} (ledr.west);
+    \draw[wire] (esp.east |- ledg.west) -- node[above, pinlbl] {D2 / D6} (ledg.west);
+    \draw[wire] (esp.east |- mw.west)   -- node[above, pinlbl] {D7 / GND} (mw.west);
+    \draw[wire] (esp.east |- pot.west)  -- node[above, pinlbl] {A0 / 3V3 / GND} (pot.west);
+\end{tikzpicture}%
+}
+\caption{NodeMCU V3 外围保护电路与传感/执行器连接原理图}
+\label{fig:hw-circuit}
+\end{figure}
+
+\begin{enumerate}
+    \item \textbf{四路 LED 独立限流}：每只外接 LED 独立串联 1\,k$\Omega$ 限流电阻（避免多灯共电阻引起正向压降差异导致的亮度串扰）。以 $V_F \approx 2.0\,\text{V}$ 估算，导通电流 $I_{\text{LED}} = (3.3 - 2.0)/1000 \approx 1.3\,\text{mA}$。由于 PWM 导通瞬间仍承受 3.3\,V 高电平且 100\% 占空比为常亮，调光支路同样不可省去限流电阻。
+    \item \textbf{A0 防过压分压与双属性换算}：ESP8266 裸芯片 ADC 耐压上限为 1.0\,V。电位器采用 3.3\,V 供电（严禁接 5V/VIN），滑动端经 $33\,\text{k}\Omega / 10\,\text{k}\Omega$ 外部分压接入 A0，最大输入被安全钳位在 $V_{\text{A0,max}} = 3.3 \times 10/(33+10) \approx 0.77\,\text{V} < 1.0\,\text{V}$。固件按 3.3\,V 基准估算电压并换算 PWM 联动目标占空比：
+    \begin{equation}
+        V_{\text{est}} = \operatorname{round}\!\left(\frac{\text{raw} \times 3.3}{1024},\, 3\right), \qquad \text{duty}_{\text{PWM}} = \operatorname{clamp}_{[0,100]}\!\left(\operatorname{round}\!\left(\frac{\text{raw} \times 100}{1024}\right)\right)
+    \end{equation}
+    当 \code{raw} 超出标称 1024 量程时保留原始诊断码，并将 \code{voltage} 标记为 \code{null / unavailable}，避免非法外推。
+    \item \textbf{微波雷达干接点隔离}：接线前断电用万用表确认模块触点确为无源常开干接点；若带有 5/12/24\,V 或市电则严禁直连 D7，须改用额定光耦或数字隔离电路。
+\end{enumerate}
+
+\subsection{硬件扩展预留与安全边界}
+本系统在硬件设计中保持严谨的安全边界。固件已保留外部 8 位串行 ADC 光敏通道驱动 \code{Tlc549.h} 及 5\,V 转 3.3\,V 缓冲器（\code{SN74LVC1G125}）防倒灌电路方案，因片选脚 D7 与微波输入冲突，当前在 \code{Config.h} 中通过宏 \code{REMOTE_ENABLE_TLC549 = 0} 屏蔽，后续重分配引脚即可即插即用。对于两线直流电机等感性负载，由于不能由 GPIO 直驱（需独立 MOSFET、续流二极管与共地电源），且电机属于高风险执行器，不可沿用灯光“断联保持输出”的策略而必须配置断联急停与看门狗，因此在未确认驱动规格前本阶段不虚构电机资源。
+
+% ==================== 第 3 章（另起一页） ====================
+\section{通信协议与一致性契约设计}
+
+\subsection{WiFi Control Protocol v1 接口与自描述物模型}
+上下位机基于 HTTP/1.1 + UTF-8 严格 JSON 通信（\texttt{protocolVersion = 1}，状态响应固定 \texttt{Cache-Control: no-store}），核心接口如表~\ref{tab:api-endpoints} 所示。协议约束单设备最多 8 项资源、请求体上限 1024\,B、响应体上限 16\,KiB（固件当前 4\,KiB）。
+
+\begin{table}[htbp]
+\centering
+\caption{WiFi Control Protocol v1 核心 RESTful 接口}
+\label{tab:api-endpoints}
+\footnotesize
+\begin{tabularx}{\textwidth}{p{0.9cm} p{5.2cm} Y p{1.4cm}}
+\toprule
+\textbf{方法} & \textbf{路径} & \textbf{语义说明} & \textbf{成功码} \\
+\midrule
+\texttt{GET} & \code{/api/v1/device} & 返回 \code{deviceId}、上电 \code{bootId}、清单版本 \code{capabilitiesRevision} 及能力描述 & \texttt{200 OK} \\
+\texttt{GET} & \code{/api/v1/state} & 返回全局单调 \code{revision}、确认值与质量标记 \code{quality}（\code{good/stale/unavailable}） & \texttt{200 OK} \\
+\texttt{PUT} & \code{/api/v1/resources/{rid}/properties/{pid}} & 写入可写属性明确目标值；携带唯一 UUID \code{requestId} 与 \code{expectedBootId} & \texttt{200 OK} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+系统采用对标物联网物模型的\textbf{自描述能力清单}：下位机通过 \texttt{GET /api/v1/device} 声明外设分类（\code{binary-output}、\code{range-output}、\code{sensor}）及属性约束，上位机据此动态渲染控件并经 \code{capability-list.schema.json} 校验：
+
+\begin{lstlisting}[language={}, caption={GET /api/v1/device 设备能力清单典型 JSON 载荷}]
+{
+  "protocolVersion": 1, "deviceId": "esp8266-0cbc29", "bootId": "boot-9f2a4c18", "capabilitiesRevision": 4,
+  "resources": [
+    {"id": "led.red", "name": "红色开关灯", "kind": "binary-output",
+     "properties": [{"id": "on", "type": "boolean", "readable": true, "writable": true}]},
+    {"id": "pwm.red", "name": "红色调光灯", "kind": "range-output",
+     "properties": [{"id": "level", "type": "integer", "min": 0, "max": 100, "step": 1, "unit": "%"}]},
+    {"id": "sensor.microwave", "name": "微波感应开关", "kind": "sensor",
+     "properties": [{"id": "detected", "type": "boolean", "writable": false},
+                    {"id": "offDelayMs", "type": "integer", "writable": false, "unit": "ms"}]}
+  ]
+}
+\end{lstlisting}
+
+\subsection{闭环交互时序与状态一致性保障}
+为应对局域网丢包、乱序与设备重启，协议设立四道防线：（1）废除非幂等 \code{toggle}，强制写入明确目标值；（2）每次上电随机生成 \code{bootId}，写请求携带旧 \code{expectedBootId} 直接返回 \texttt{409 DEVICE\_RESTARTED}；（3）同会话内全局 \code{revision} 单调递增，丢弃迟到旧快照；（4）规范划分 400--500 错误码，无有效读数时诚实返回 \texttt{null / unavailable}。完整闭环交互时序如图~\ref{fig:seq} 所示。
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.90\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\scriptsize,
+    actor/.style={rectangle, rounded corners=3pt, draw=DiagLine, thick, fill=DiagFillAlt, minimum width=2.4cm, minimum height=0.52cm, align=center, font=\footnotesize\bfseries},
+    msg/.style={-{Stealth[length=4.5pt]}, thick, draw=DiagLine},
+    ret/.style={-{Stealth[length=4.5pt]}, thick, dashed, draw=DiagLine},
+    note/.style={rectangle, rounded corners=2pt, draw=DiagLine, fill=DiagFill, align=center, font=\scriptsize}
+]
+    \node[actor] (app) at (0,0) {Android 上位机};
+    \node[actor] (esp) at (5.8,0) {ESP8266 服务器};
+    \node[actor] (hw)  at (11.2,0) {硬件驱动层};
+
+    \draw[dashed, color=CodeBorder, thick] (app.south) -- (0,-6.25);
+    \draw[dashed, color=CodeBorder, thick] (esp.south) -- (5.8,-6.25);
+    \draw[dashed, color=CodeBorder, thick] (hw.south)  -- (11.2,-6.25);
+
+    \draw[msg] (0,-0.72) -- node[above] {1. \texttt{GET /api/v1/device}（两阶段握手）} (5.8,-0.72);
+    \draw[ret] (5.8,-1.25) -- node[above] {\texttt{200 OK \{bootId, capabilitiesRevision, resources[7]\}}} (0,-1.25);
+    \draw[msg] (0,-1.78) -- node[above] {2. \texttt{GET /api/v1/state}} (5.8,-1.78);
+    \draw[ret] (5.8,-2.30) -- node[above] {\texttt{200 OK \{bootId, revision=0, values, quality\}}} (0,-2.30);
+    \node[note, text width=5.5cm, inner sep=3pt] at (2.9,-2.84) {Compose 控件注册表按能力清单动态生成控制面板};
+
+    \draw[msg] (0,-3.52) -- node[above] {3. 前台每 2\,s 静默轮询 \texttt{GET /api/v1/state}} (5.8,-3.52);
+    \draw[ret] (5.8,-4.02) -- node[above] {\texttt{200 OK \{revision, 最新确认快照\}}} (0,-4.02);
+
+    \draw[msg] (0,-4.58) -- node[above] {4. \texttt{PUT .../pwm.red/properties/level \{requestId, expectedBootId, value:80\}}} (5.8,-4.58);
+    \draw[msg] (5.8,-5.08) -- node[above] {10 道校验通过 $\to$ \texttt{startWaveform}/GPIO回读} (11.2,-5.08);
+    \draw[ret] (11.2,-5.56) -- node[above] {驱动确认成功，\texttt{revision++}} (5.8,-5.56);
+    \draw[ret] (5.8,-6.04) -- node[above] {\texttt{200 OK \{value:80, revision\}}（重启则返回 \texttt{409} 触发重新握手）} (0,-6.04);
+\end{tikzpicture}%
+}
+\caption{上下位机两阶段握手、静默轮询与控制闭环确认时序图}
+\label{fig:seq}
+\end{figure}
+
+% ==================== 第 4 章（另起一页） ====================
+\section{ESP8266 边缘服务器端设计与实现}
+
+\subsection{固件架构与非阻塞增量 HTTP 状态机}
+下位机固件（\code{v0.9.0}）基于 PlatformIO（\code{espressif8266@4.2.1}，ArduinoJson 6.21.5）开发，由主循环（\code{ESP8266_Remote.ino}）、网络与 mDNS 服务（\code{NetworkService.h} / \code{WiFiConfig.h}）、有界 HTTP 与严格 JSON 解析（\code{HttpRequest.h} / \code{StrictJson.h}）、REST 路由与校验（\code{Api.h}）以及边缘自治与硬件驱动（\code{Config.h} / \code{Resources.h} / \code{Peripheral.h}）构成。
+
+针对 ESP8266 单核资源约束，\code{loop()} 采用\textbf{硬件自治优先、网络分片让渡}的非阻塞架构：每轮循环首行调用 \code{registry.sample(millis())} 处理中断与采样，其次调用 \code{network.update()} 维护 Wi-Fi 与 mDNS；HTTP 收发单步上限 256\,B，配 1.5\,s 空闲超时与 5\,s 总超时，末尾执行 \code{delay(0)} 及时喂狗。\code{NetworkService} 设置 \code{WiFi.persistent(false)} 防磨损 Flash，并通过 \code{GotIP/Disconnected} 事件回调非阻塞驱动 mDNS 注册（失败每 5\,s 自动重试，断线时保持当前灯光状态）。
+
+\subsection{十道校验防火墙与严格数值兼容实现}
+\code{Api::write()} 在触碰任何引脚前依次完成 10 道校验（媒体类型 415、严格单一 JSON 对象 400、36 位 UUID、字段完整、资源/属性存在 404、\code{expectedBootId} 匹配 409、可写校验 422、类型/范围/步长 422 及驱动确认 500）。针对 Android 使用 \code{Double} 将 50\% 序列化为 \code{50.0} 的联调问题，固件实现了严格整数等价判定（接受 \code{50.0}，拒绝 \code{50.5} 等真小数）：
+
+\needspace{16\baselineskip}
+\begin{lstlisting}[language=C++, caption={Api.h 中的重启熔断与严格 PWM 整数数值校验核心代码}]
+if (strcmp(expectedBoot, bootId_)) {
+  error(409, "DEVICE_RESTARTED", "Read device and state again", requestId); return;
+}
+if (!output->writable()) {
+  error(422, "READ_ONLY", "Sensor property is read-only", requestId); return;
+}
+const double number = input_["value"].as<double>();
+if (!std::isfinite(number) || std::trunc(number) != number ||
+    number < spec.minimum || number > spec.maximum) {
+  error(422, "INVALID_VALUE", "Value must be a finite whole number within range", requestId); return;
+}
+target = static_cast<int32_t>(number);
+if ((target - spec.minimum) % spec.step != 0) {
+  error(422, "INVALID_VALUE", "Value outside range or step", requestId); return;
+}
+if (!registry_.write(*output, target)) {
+  error(500, "DRIVER_ERROR", "Output driver could not confirm configuration", requestId); return;
+}
+\end{lstlisting}
+
+\subsection{D7 硬件中断自治与双区双模调光仲裁}
+边缘自治与驱动闭环由 \code{Peripheral.h} 与 \code{Resources.h} 协同实现（图~\ref{fig:edge-logic}）：
+\begin{enumerate}
+    \item \textbf{D7 微波雷达 \code{IRAM_ATTR} 中断队列与覆盖}：\code{edgeISR} 仅将 \code{millis()} 与引脚电平写入 4 槽有界环形队列，绝不在 ISR 内做网络或串口操作；主循环在临界区出队并执行 20\,ms 软件消抖，溢出时自动回读引脚重同步；观测到完整 \texttt{false} $\to$ \texttt{true} $\to$ \texttt{false} 周期后记录毫秒级 \code{offDelayMs} 并驱动玄关灯 \code{led.main}。手机主动写 \code{led.main} 时置位 \code{manualLedOverride_} 临时接管，待下次雷达状态跳变后自动恢复自治。
+    \item \textbf{红/绿双区独立双模仲裁（20\,Hz）}：主循环每 50\,ms 采样 A0 电位器并换算目标占空比；红、绿两路各自独立——开关灯为 \code{false} 时对应 PWM 实时跟随旋钮且同步回显至 App 滑块，开关灯为 \code{true} 时切断旋钮覆盖并锁由 App 精准调光。
+    \item \textbf{驱动闭环确认}：二态输出写后立刻 \code{digitalRead} 回读，不符则回滚并报错；PWM 采用带布尔返回值的 \code{startWaveform}（1\,kHz，周期 1000\,$\mu$s）取代无返回值的 \code{analogWrite}。
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.96\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=0.38cm and 0.65cm,
+    blk/.style={rectangle, rounded corners=3pt, draw=DiagLine, fill=DiagFill, text width=3.6cm, align=center, minimum height=0.68cm, font=\scriptsize},
+    dec/.style={diamond, aspect=2.2, draw=DiagLine, fill=DiagFillAlt, align=center, font=\scriptsize, inner sep=1.5pt},
+    arr/.style={-{Stealth[length=4.5pt]}, thick, draw=DiagLine}
+]
+    \node[blk] (isr) {\textbf{D7 CHANGE 中断 (IRAM\_ATTR)}\\写入 4 槽有界环形队列};
+    \node[blk, below=of isr] (deb) {\textbf{主循环出队 + 20\,ms 消抖}\\溢出自动回读重同步};
+    \node[blk, below=of deb] (dur) {完整周期测算 \texttt{offDelayMs}\\清除 \texttt{manualLedOverride\_}};
+    \node[blk, fill=DiagFillAlt, below=of dur] (mled) {自动联动 \texttt{led.main}\\（期间手机可临时覆盖）};
+    \draw[arr] (isr) -- (deb); \draw[arr] (deb) -- (dur); \draw[arr] (dur) -- (mled);
+
+    \node[blk, right=2.6cm of isr, text width=5.2cm] (pot) {\textbf{主循环每 50\,ms (20\,Hz) 采样 A0}\\换算 \texttt{round(raw*100/1024)} 饱和至 100\%};
+    \node[dec, below=0.5cm of pot] (chk) {\texttt{led.red/green == false} ?};
+    \node[blk, below left=0.55cm and -0.85cm of chk, text width=3.0cm] (loc) {\textbf{本地旋钮模式}\\PWM 20\,Hz 跟随 A0\\App 滑块同步显示};
+    \node[blk, fill=DiagFillAlt, below right=0.55cm and -0.85cm of chk, text width=3.0cm] (rem) {\textbf{手机托管模式}\\断开 A0 覆盖\\锁定 App 1\,kHz PWM};
+    \draw[arr] (pot) -- (chk);
+    \draw[arr] (chk.west) -| node[above, pos=0.25, font=\scriptsize] {是} (loc.north);
+    \draw[arr] (chk.east) -| node[above, pos=0.25, font=\scriptsize] {否} (rem.north);
+
+    \begin{scope}[on background layer]
+        \node[rectangle, rounded corners=5pt, draw=DiagLine, dashed, inner sep=7pt, fit=(isr)(mled), label={[font=\footnotesize\bfseries]above:玄关微波中断自治链路}] {};
+        \node[rectangle, rounded corners=5pt, draw=DiagLine, dashed, inner sep=7pt, fit=(pot)(loc)(rem), label={[font=\footnotesize\bfseries]above:客厅/书房独立双模调光仲裁链路}] {};
+    \end{scope}
+\end{tikzpicture}%
+}
+\caption{ESP8266 边缘自治核心：D7 微波中断链路与双区双模调光仲裁逻辑}
+\label{fig:edge-logic}
+\end{figure}
+
+% ==================== 第 5 章（另起一页） ====================
+\section{Android 上位机客户端设计与实现}
+
+\subsection{MVVM 分层架构与能力驱动动态 UI}
+Android 客户端（\code{edu.wifi.light}，\code{v1.1.2}）采用单向数据流 MVVM 架构：\code{MainActivity} 负责 Android 17 局域网权限与前后台生命周期绑定；\code{ControlViewModel} 通过 \code{StateFlow<ControlState>} 统一驱动界面状态，并由 \code{SnapshotRules} 校验数据合法性；\code{DeviceRepository} 抽象设备访问接口，使真实 \code{HttpDeviceRepository} 与内置离线故障模拟 \code{MockDeviceRepository} 无缝切换。
+
+界面层 \code{ControlScreen.kt} 完全不硬编码外设按钮，而是遍历下位机能力清单中的 \code{device.resources}，依据属性元数据动态映射 Material 3 控件（遇到未知属性类型则安全降级为不可写提示卡片，绝不崩溃）：
+
+\begin{lstlisting}[language={}, caption={ControlScreen.kt 能力驱动动态控件分发核心代码}]
+when {
+  !property.supported -> Text("不支持的属性类型：${property.type}（不可操作）")
+  !property.controllable -> Text("只读", style = MaterialTheme.typography.labelSmall)
+  property.type == "boolean" -> {
+    Switch(checked = (pending as? BooleanValue)?.value ?: confirmed,
+           onCheckedChange = { onWrite(BooleanValue(it)) }, enabled = enabled && good)
+  }
+  property.type in setOf("integer", "number") -> {
+    Slider(value = target.toFloat(), valueRange = min.toFloat()..max.toFloat(),
+           onValueChangeFinished = { onWrite(NumberValue(target)) }, enabled = enabled && good)
+    OutlinedTextField(value = numericInput, ...)  // 同步提供精确数值输入与步长预校验
+  }
+}
+\end{lstlisting}
+
+\subsection{静默轮询、Mutex 单槽排队与结果未知回查}
+为消除每 2\,s 轮询带来的页面闪烁与并发冲突，\code{ControlViewModel} 引入三项核心机制：
+\begin{enumerate}
+    \item \textbf{静默刷新与固定槽位}：自动轮询调用 \code{refresh(silent = true)}，不弹出进度条、不置灰按钮；进度槽固定高度 \code{4.dp}，等待提示行固定 \code{minLines = 1, maxLines = 1}，彻底杜绝界面上下跳动。
+    \item \textbf{全局 \code{Mutex} 串行锁与点击排队}：轮询持锁读状态期间，用户点击不丢失而是写入 \code{pending} 单槽排队（连点不堆积命令）；等读操作释放锁后，发 \code{PUT} 前依次复核前后台状态、连接态、\code{bootId}、\code{capabilitiesRevision} 与确认值质量，全部通过才下发。
+    \item \textbf{禁止盲目重发与自动回查}：\code{HttpDeviceRepository} 关闭 OkHttp 自动重试与重定向并限制响应体 $\le 16\,\text{KiB}$；写操作超时或回执校验失败时标记 \code{outcomeUnknown = true}，ViewModel 捕获后自动执行 \code{synchronize()} 回查真实硬件状态。
+\end{enumerate}
+
+\subsection{NSD 发现、无外网 Wi-Fi 路由绑定与 Android 17 权限适配}
+\code{DeviceDiscovery.kt} 调用系统 \code{NsdManager} 监听 \code{_wifi-control._tcp.} 服务（限时 20\,s、队列上限 32），仅保留局域网合法地址；因不扫描 Wi-Fi AP 列表，Android 6--16 零定位权限需求。针对手机连上无外网的开发板热点时系统自动切回 5G 流量的难题，\code{NetworkRouter.kt} 通过检索 \code{TRANSPORT_WIFI} 网络并调用 \code{builder.socketFactory(it.socketFactory)} 将 HTTP 请求强绑至 Wi-Fi 网卡，无需用户关闭移动数据；在 Android 17 (API 37) 上则主动申请 \code{ACCESS_LOCAL_NETWORK} 局域网权限并处理前台撤回。
+
+% ==================== 第 6 章（另起一页） ====================
+\section{系统测试验证与性能审计}
+
+\subsection{双端自动化测试矩阵与资源审计}
+项目构建了覆盖协议契约、硬件驱动、网络生命周期与移动端界面的全链路自动化测试体系，并通过 PlatformIO 对固件内存段进行了精确审计，实测数据分别见表~\ref{tab:test-summary} 与表~\ref{tab:mem-audit}。
+
+\begin{table}[htbp]
+\centering
+\caption{双端自动化测试与实物启动验证汇总}
+\label{tab:test-summary}
+\footnotesize
+\begin{tabularx}{\textwidth}{p{2.6cm} p{4.2cm} Y p{1.9cm}}
+\toprule
+\textbf{测试层级} & \textbf{执行工具 / 套件} & \textbf{核心覆盖场景} & \textbf{实测结果} \\
+\midrule
+下位机 C++ 契约测试 & \code{./tools/test_native.ps1} & 幂等写入、\code{bootId} 熔断、严格 JSON、PWM 浮点兼容、双模联动、D7 中断消抖与溢出重同步 & 392/392 通过 \\
+下位机网络生命周期 & \code{tests/network.cpp} & STA(32)/AP(27)/空 SSID(5) 的 \code{GotIP}、mDNS 注册、断线重连、5\,s 重试与计时回绕 & 64/64 通过 \\
+跨端 Schema 校验 & \code{tests/check_capabilities.py} & 核对固件导出 JSON 完全符合 \code{capability-list.schema.json} & 100\% 通过 \\
+上位机 JVM 单元测试 & Gradle \code{testDebugUnitTest} & 协议编解码、清单更新/删除、静默轮询调度、单槽排队取消与失败保护 & 50/50 通过 \\
+上位机模拟器测试 & Android 17 (API 37) 模拟器 & 动态控件渲染、模拟新增“床头灯”、固定布局无抖动、权限与 HTTP 联调 & 13/13 通过 \\
+实物烧录与压测脚本 & COM6 + \code{tools/check_device.py} & 331,568\,B 烧录 Hash 校验通过，串口确认加入 \code{SmartLife} 并注册 mDNS & 烧录启动通过 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{ESP8266 v0.9.0 固件存储资源与 IRAM 占用审计}
+\label{tab:mem-audit}
+\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+\textbf{构建环境} & \textbf{RAM 占用 (B)} & \textbf{RAM 占比} & \textbf{Flash 占用 (B)} & \textbf{IRAM \texttt{.text1} (B)} \\
+\midrule
+\code{nodemcuv2}（默认 STA） & 46,512 / 81,920 & 56.8\% & 327,423 / 1,044,464 & 29,025 \\
+\code{nodemcuv2_ap}（板端 SoftAP） & 46,484 / 81,920 & 56.7\% & 326,063 / 1,044,464 & 29,025 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{典型联调问题定位与四步闭环验收}
+联调迭代中重点攻克了三类工程问题：（1）\textbf{v0.3.1 PWM 浮点编码兼容}，解决 Android \code{Double} 序列化 \code{50.0} 被下位机严格校验误拒的问题；（2）\textbf{v1.1.2 轮询闪屏与点击丢失}，拆离静默刷新与固定槽位并引入 \code{Mutex} 单槽排队；（3）\textbf{v0.9.0 中断与引脚审计}，将微波输入改为 \code{IRAM_ATTR} 队列并核查 \code{.text1}（29,025\,B）IRAM 安全余量。
+
+系统现场闭环验收按四步完成：（1）手机开 \code{SmartLife} 热点，App 通过 mDNS 自动发现 ESP8266 并动态生成 7 项外设卡片；（2）触发微波雷达验证玄关灯自动亮起、手机临时覆盖及 \code{offDelayMs} 毫秒级更新；（3）拧动电位器验证红/绿灯 20\,Hz 同步调光，开启 \code{led.red} 锁死客厅 80\% 亮度后继续拧旋钮验证双区完全解耦；（4）切换 App 模拟模式一键新增“床头灯”验证零代码扩展，并注入“响应丢失”验证自动状态回查。
+
+% ==================== 第 7 章（另起一页） ====================
+\section{实验思考题解答、团队分工与总结}
+
+\subsection{实验思考题解答}
+
+\subsubsection{思考题 (1)：控制系统硬件平台如何搭建？}
+控制系统硬件平台由嵌入式无线主控、电气保护网络、传感输入通道与执行输出通道四部分组成。本系统选用集成 2.4\,GHz Wi-Fi 与 TCP/IP 协议栈的 3.3\,V 主控 NodeMCU V3（ESP8266EX），引脚规划避开串口（GPIO1/3）、Flash（GPIO6--11）与启动配置脚（GPIO0/15），并由固件在启动前执行全表引脚冲突审计。执行端四路指示与 1\,kHz PWM 调光 LED 分别串联独立 1\,k$\Omega$ 限流电阻接入 D1/D2/D5/D6；若扩展直流电机或市电负载，须配备独立 MOSFET 或光耦继电器隔离驱动及断联看门狗，严禁 GPIO 直驱。传感端针对裸芯片 A0 的 1.0\,V 耐压限制，为 3.3\,V 电位器加装 33\,k$\Omega$/10\,k$\Omega$ 分压保护（上限 0.77\,V）；微波雷达则经断电通断核验确为无源常开干接点后接入开启内部上拉的 D7 硬件中断脚，带电输出必须经光耦隔离。
+
+\subsubsection{思考题 (2)：服务器端通信如何实现？}
+嵌入式服务器端基于 ESP8266 实现轻量级非阻塞 HTTP/1.1 服务，核心包含四层机制：首先在网络层关闭 Flash 持久化并利用 \code{GotIP/Disconnected} 事件回调非阻塞维护 STA/SoftAP 地址与 \code{_wifi-control._tcp.local.} mDNS 广播（失败 5\,s 重试）；其次在传输层采用增量状态机，主循环优先运行本地采样与中断处理，HTTP 收发单步限流 256\,B 并设 1.5\,s 空闲 / 5\,s 总超时，防止慢连接阻塞或引发看门狗复位；再次在协议层提供 \texttt{GET /api/v1/device}、\texttt{GET /api/v1/state} 与 \texttt{PUT} 写入接口，写入前依次执行严格 JSON、UUID、\code{expectedBootId} 防重启、只读与范围步长等 10 道校验；最后在驱动层执行 GPIO 回读与 \code{startWaveform} 返回值闭环确认，成功后递增全局 \code{revision} 返回标准 JSON 回执，异常时回滚硬件并返回规范 HTTP 错误码。
+
+\subsection{团队分工}
+本项目采用“协议契约先行、上下位机并行开发、真机联调合拢”的协作方式，团队具体分工见表~\ref{tab:division}。
+
+\begin{table}[htbp]
+\centering
+\caption{项目团队分工表}
+\label{tab:division}
+\footnotesize
+\begin{tabularx}{\textwidth}{p{1.6cm} p{2.8cm} Y p{1.4cm}}
+\toprule
+\textbf{成员} & \textbf{负责方向} & \textbf{主要承担任务} & \textbf{工作量} \\
+\midrule
+周徐 & 上位机 Android 与协议架构 & 主导 \texttt{WiFi Control Protocol v1} 与 JSON Schema 规范；完成 \texttt{Android\_WIFI v1.1.2}（Kotlin + Compose）动态能力面板、\code{Mutex} 静默轮询与单槽排队、NSD 发现、\code{NetworkRouter} Socket 绑定、Android 17 权限适配、内置故障模拟及 50+13 项自动化测试 & 50\% \\
+李一康 & 下位机固件与硬件系统 & 完成 NodeMCU V3 外围保护电路搭建与电气安全核验；实现 \texttt{ESP8266\_Remote v0.9.0} 非阻塞 HTTP 服务器、10 道校验防火墙、D7 中断队列消抖、20\,Hz 双区双模调光仲裁、GPIO 回读确认、事件驱动 mDNS 及 392+64 项原生 C++ 契约与网络测试 & 50\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{实验总结}
+本次实验圆满完成了基于 Android 与 ESP8266 的无线 Wi-Fi 控制系统设计，并通过自描述物模型、非阻塞实时边缘自治、双模无冲突调光与双端 519 项自动化契约验证，将基础遥控实验升维为高可靠的局域网智能家居边缘系统。后续可在现有解耦架构上平滑启用预留的 TLC549 光敏通道，接入配独立驱动与断联急停看门狗的直流电机，并在 \code{DeviceRepository} 外层扩展多节点集群管理能力。
+
+\end{document}
